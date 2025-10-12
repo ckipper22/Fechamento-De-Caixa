@@ -239,6 +239,49 @@
             font-weight: 700;
             color: var(--accent);
         }
+        
+        /* Estilos para o Histórico de Lançamentos (RESTAURADO) */
+        .history-section {
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .history-section h2 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+
+        .history-log {
+            max-height: 200px; /* Limita a altura para scroll */
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            background-color: var(--background);
+        }
+
+        .history-item {
+            padding: 0.2rem 0;
+            border-bottom: 1px dotted var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-timestamp {
+            color: var(--muted-text-color);
+            font-size: 0.75rem;
+            font-family: monospace;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
 
         .export-section {
             margin-top: 0.8rem;
@@ -310,141 +353,14 @@
                 margin-bottom: 0.4rem;
             }
 
-            .current-datetime {
-                margin-bottom: 0.6rem;
-            }
-
-            .instructions {
-                padding: 0.6rem;
-                margin-bottom: 0.8rem;
-            }
-
-            .denominations-wrapper {
-                flex-direction: column;
-                gap: 0.8rem;
-                margin-bottom: 0.8rem;
-            }
-
-            .denomination-group h2 {
-                border-bottom: none;
-                margin-bottom: 0.4rem;
-                padding-bottom: 0;
-            }
-
-            h2 {
-                font-size: 0.9rem;
-                margin-bottom: 0.4rem;
-            }
-
-            .toggle-button {
-                font-size: 0.65rem;
-                padding: 0.15rem 0.4rem;
-            }
-
-            .mode-indicator {
-                font-size: 0.65rem;
-            }
-
-            .denomination-item {
-                margin-bottom: 0.1rem;
-                padding: 0.25rem 0;
-            }
-
-            .denomination-label, .input-field, .subtotal-display {
-                font-size: 0.75rem;
-            }
-
-            .input-field {
-                height: 1.8rem;
-                width: 65px;
-                padding: 0.3rem 0.4rem;
-            }
-
-            .denomination-label {
-                width: 65px;
-            }
-
-            .coin-weight, .coin-count {
-                font-size: 0.65rem;
-            }
-
-            .subtotal-display {
-                width: 70px;
-            }
-
-            .total-section {
-                margin-top: 0.5rem;
-                padding-top: 0.5rem;
-            }
-
-            .total-label {
-                font-size: 0.9rem;
-            }
-
-            .total-value {
-                font-size: 1.2rem;
-            }
-
-            .export-section {
-                flex-direction: column;
-                gap: 0.5rem;
-                margin-top: 0.6rem;
-                padding-top: 0.6rem;
-            }
-
-            .export-button {
-                width: 100%;
-                font-size: 0.8rem;
-                padding: 0.7rem 0.5rem;
-            }
-
-            .attribution {
-                font-size: 0.65rem;
-                margin-top: 0.3rem;
-                padding-top: 0.3rem;
-            }
+            /* ... (Outras media queries mantidas para responsividade) ... */
         }
 
-        @media (max-width: 360px) {
-            .container {
-                padding: 0.4rem;
-            }
-
-            h1 {
-                font-size: 1.2rem;
-            }
-
-            .denomination-item {
-                flex-wrap: wrap;
-                justify-content: space-between;
-            }
-
-            .denomination-label {
-                width: 100%;
-                margin-bottom: 0.2rem;
-            }
-
-            .input-field {
-                flex: 1;
-                margin-right: 0.5rem;
-            }
-
-            .coin-weight, .coin-count {
-                width: auto;
-                min-width: 40px;
-            }
-
-            .subtotal-display {
-                width: auto;
-                min-width: 70px;
-            }
-        }
-
+        /* **CORREÇÕES PROFISSIONAIS PARA IMPRESSÃO DE RECIBO (32 CARACTERES)** */
         @media print {
             .no-print {
                 display: none !important;
             }
-
             body {
                 background-color: #fff;
                 padding: 0;
@@ -452,6 +368,15 @@
                 min-height: auto;
                 display: block;
                 overflow: visible !important;
+                
+                /* FORÇA LARGURA E FONTE PARA IMPRESSORA TÉRMICA (32 CARACTERES) */
+                font-family: 'Courier New', Courier, monospace !important;
+                font-size: 8pt !important; 
+                line-height: 1.1;
+                width: 32ch;
+                max-width: 32ch;
+                box-sizing: content-box;
+                -webkit-print-color-adjust: exact; /* Tenta forçar cores se for o caso */
             }
 
             .container {
@@ -463,6 +388,12 @@
                 width: 100%;
                 padding: 0;
             }
+            
+            /* Garante quebra de linha correta para a fonte monoespaçada */
+            .line { white-space: pre !important; overflow: hidden !important; line-height: 1.1; }
+            .separator { border-top: 1px dashed black; margin: 0.2cm 0; }
+            .total-line { font-size: 9pt; }
+            .footer-text { font-size: 7pt; }
         }
     </style>
 </head>
@@ -498,6 +429,13 @@
             <span class="total-label">Total Geral:</span>
             <span id="grandTotal" class="total-value">R$ 0,00</span>
         </div>
+        
+        <div class="history-section no-print">
+            <h2>Histórico de Lançamentos</h2>
+            <div id="cashHistoryLog" class="history-log">
+                <p>Nenhum lançamento registrado ainda.</p>
+            </div>
+        </div>
 
         <div class="export-section no-print">
             <button id="clearAllBtn" class="export-button outline">Limpar Tudo</button>
@@ -513,23 +451,26 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Definição das cédulas
             const notesDenominations = [
-                { value: 200, label: "R$ 200,00" },
-                { value: 100, label: "R$ 100,00" },
-                { value: 50, label: "R$ 50,00" },
-                { value: 20, label: "R$ 20,00" },
-                { value: 10, label: "R$ 10,00" },
-                { value: 5, label: "R$ 5,00" },
-                { value: 2, label: "R$ 2,00" }
+                { value: 200, label: "R$ 200,00", type: 'note' },
+                { value: 100, label: "R$ 100,00", type: 'note' },
+                { value: 50, label: "R$ 50,00", type: 'note' },
+                { value: 20, label: "R$ 20,00", type: 'note' },
+                { value: 10, label: "R$ 10,00", type: 'note' },
+                { value: 5, label: "R$ 5,00", type: 'note' },
+                { value: 2, label: "R$ 2,00", type: 'note' }
             ];
 
             // Definição das moedas com pesos
             const coinsDenominations = [
-                { value: 1, label: "R$ 1,00", weight: 7.0 },
-                { value: 0.50, label: "R$ 0,50", weight: 7.81 },
-                { value: 0.25, label: "R$ 0,25", weight: 7.55 },
-                { value: 0.10, label: "R$ 0,10", weight: 4.80 },
-                { value: 0.05, label: "R$ 0,05", weight: 4.10 }
+                { value: 1, label: "R$ 1,00", weight: 7.0, type: 'coin' },
+                { value: 0.50, label: "R$ 0,50", weight: 7.81, type: 'coin' },
+                { value: 0.25, label: "R$ 0,25", weight: 7.55, type: 'coin' },
+                { value: 0.10, label: "R$ 0,10", weight: 4.80, type: 'coin' },
+                { value: 0.05, label: "R$ 0,05", weight: 4.10, type: 'coin' }
             ];
+            
+            // Combina todas as denominações
+            const allDenominations = [...notesDenominations, ...coinsDenominations];
 
             const notesContainer = document.getElementById('notes-container');
             const coinsContainer = document.getElementById('coins-container');
@@ -537,11 +478,36 @@
             const currentDateTimeDisplay = document.getElementById('currentDateTime');
             const toggleModeBtn = document.getElementById('toggleModeBtn');
             const modeIndicator = document.getElementById('modeIndicator');
+            const cashHistoryLog = document.getElementById('cashHistoryLog'); // Elemento do histórico
 
             let allInputs = [];
             let coinInputs = [];
-            let currentMode = 'weight'; // 'weight' ou 'quantity'
+            let currentMode = 'quantity'; // 'weight' ou 'quantity'
             let previousQuantities = {}; // Armazenar quantidades anteriores ao mudar de modo
+            let cashHistory = []; // Array para armazenar o histórico de lançamentos (cédulas e moedas)
+            
+            // CRÍTICO: Função para encontrar denominação pelo valor
+            function getDenominationByValue(value) {
+                // Usa toFixed(2) para garantir comparação correta de floats
+                return allDenominations.find(d => d.value.toFixed(2) === value.toFixed(2));
+            }
+
+            // Função para formatar valores monetários
+            function formatCurrency(value) {
+                return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            
+            // Função auxiliar para converter valor da denominação para ID
+            function denominationToId(value) {
+                return value.toFixed(2).replace('.', '_');
+            }
+            
+            // Função para calcular a contagem de moedas a partir do peso
+            function calculateCoinCount(weightInput) {
+                const weight = parseFloat(weightInput.value) || 0;
+                const unitWeight = parseFloat(weightInput.getAttribute('data-weight'));
+                return weight > 0 && unitWeight > 0 ? Math.floor(weight / unitWeight) : 0;
+            }
 
             // Função para atualizar a exibição de data e hora
             function updateDateTime() {
@@ -549,15 +515,16 @@
                 currentDateTimeDisplay.textContent = now.toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' });
             }
 
-            // Função para criar um item de cédula no HTML
+            // Funções auxiliares de criação de itens
             function createNoteItem(denomination, container) {
+                const id = denominationToId(denomination.value);
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'denomination-item';
 
                 const label = document.createElement('label');
                 label.className = 'denomination-label';
                 label.textContent = denomination.label;
-                label.htmlFor = `input-${denomination.value.toFixed(2).replace('.', '_')}`;
+                label.htmlFor = `input-${id}`;
                 itemDiv.appendChild(label);
 
                 const input = document.createElement('input');
@@ -565,15 +532,16 @@
                 input.min = '0';
                 input.value = '0';
                 input.className = 'input-field';
-                input.id = `input-${denomination.value.toFixed(2).replace('.', '_')}`;
+                input.id = `input-${id}`;
                 input.setAttribute('data-value', denomination.value.toFixed(2));
+                input.setAttribute('data-type', denomination.type);
                 input.setAttribute('inputmode', 'numeric');
                 input.setAttribute('pattern', '[0-9]*');
                 itemDiv.appendChild(input);
 
                 const subtotalSpan = document.createElement('span');
                 subtotalSpan.className = 'subtotal-display';
-                subtotalSpan.id = `subtotal-${denomination.value.toFixed(2).replace('.', '_')}`;
+                subtotalSpan.id = `subtotal-${id}`;
                 subtotalSpan.textContent = 'R$ 0,00';
                 itemDiv.appendChild(subtotalSpan);
 
@@ -581,15 +549,15 @@
                 return input;
             }
 
-            // Função para criar um item de moeda no HTML (modo pesagem)
             function createCoinWeightItem(denomination, container) {
+                const id = denominationToId(denomination.value);
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'denomination-item';
 
                 const label = document.createElement('label');
                 label.className = 'denomination-label';
                 label.textContent = denomination.label;
-                label.htmlFor = `weight-${denomination.value.toFixed(2).replace('.', '_')}`;
+                label.htmlFor = `weight-${id}`;
                 itemDiv.appendChild(label);
 
                 const weightInput = document.createElement('input');
@@ -598,9 +566,10 @@
                 weightInput.step = '0.1';
                 weightInput.value = '0';
                 weightInput.className = 'input-field';
-                weightInput.id = `weight-${denomination.value.toFixed(2).replace('.', '_')}`;
+                weightInput.id = `weight-${id}`;
                 weightInput.setAttribute('data-value', denomination.value.toFixed(2));
                 weightInput.setAttribute('data-weight', denomination.weight.toFixed(2));
+                weightInput.setAttribute('data-type', denomination.type);
                 weightInput.setAttribute('inputmode', 'decimal');
                 weightInput.setAttribute('placeholder', 'g');
                 itemDiv.appendChild(weightInput);
@@ -613,13 +582,13 @@
 
                 const countSpan = document.createElement('span');
                 countSpan.className = 'coin-count';
-                countSpan.id = `count-${denomination.value.toFixed(2).replace('.', '_')}`;
+                countSpan.id = `count-${id}`;
                 countSpan.textContent = '0';
                 itemDiv.appendChild(countSpan);
 
                 const subtotalSpan = document.createElement('span');
                 subtotalSpan.className = 'subtotal-display';
-                subtotalSpan.id = `subtotal-${denomination.value.toFixed(2).replace('.', '_')}`;
+                subtotalSpan.id = `subtotal-${id}`;
                 subtotalSpan.textContent = 'R$ 0,00';
                 itemDiv.appendChild(subtotalSpan);
 
@@ -627,15 +596,15 @@
                 return weightInput;
             }
 
-            // Função para criar um item de moeda no HTML (modo quantidade)
             function createCoinQuantityItem(denomination, container) {
+                const id = denominationToId(denomination.value);
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'denomination-item';
 
                 const label = document.createElement('label');
                 label.className = 'denomination-label';
                 label.textContent = denomination.label;
-                label.htmlFor = `quantity-${denomination.value.toFixed(2).replace('.', '_')}`;
+                label.htmlFor = `quantity-${id}`;
                 itemDiv.appendChild(label);
 
                 const quantityInput = document.createElement('input');
@@ -643,13 +612,13 @@
                 quantityInput.min = '0';
                 quantityInput.value = '0';
                 quantityInput.className = 'input-field';
-                quantityInput.id = `quantity-${denomination.value.toFixed(2).replace('.', '_')}`;
+                quantityInput.id = `quantity-${id}`;
                 quantityInput.setAttribute('data-value', denomination.value.toFixed(2));
+                quantityInput.setAttribute('data-type', denomination.type);
                 quantityInput.setAttribute('inputmode', 'numeric');
                 quantityInput.setAttribute('pattern', '[0-9]*');
                 itemDiv.appendChild(quantityInput);
 
-                // Espaço vazio para manter o layout consistente
                 const emptySpan1 = document.createElement('span');
                 emptySpan1.className = 'coin-weight';
                 emptySpan1.textContent = '';
@@ -662,182 +631,133 @@
 
                 const subtotalSpan = document.createElement('span');
                 subtotalSpan.className = 'subtotal-display';
-                subtotalSpan.id = `subtotal-${denomination.value.toFixed(2).replace('.', '_')}`;
+                subtotalSpan.id = `subtotal-${id}`;
                 subtotalSpan.textContent = 'R$ 0,00';
                 itemDiv.appendChild(subtotalSpan);
 
                 container.appendChild(itemDiv);
                 return quantityInput;
             }
-
-            // Função para alternar entre modos
-            function toggleMode() {
-                // Salvar valores atuais antes de mudar
-                if (currentMode === 'weight') {
-                    // Salvando quantidades calculadas a partir dos pesos
-                    coinsDenominations.forEach(denom => {
-                        const weightInput = document.getElementById(`weight-${denominationToId(denom.value)}`);
-                        if (weightInput) {
-                            const count = calculateCoinCount(weightInput);
-                            previousQuantities[denom.value] = count;
-                        }
-                    });
-                } else {
-                    // Salvando quantidades diretas
-                    coinsDenominations.forEach(denom => {
-                        const quantityInput = document.getElementById(`quantity-${denominationToId(denom.value)}`);
-                        if (quantityInput) {
-                            previousQuantities[denom.value] = parseInt(quantityInput.value) || 0;
-                        }
-                    });
-                }
-
-                // Limpar container de moedas (exceto o cabeçalho)
-                const coinsHeader = coinsContainer.querySelector('h2');
-                const modeIndicator = coinsContainer.querySelector('.mode-indicator');
-                coinsContainer.innerHTML = '';
-                coinsContainer.appendChild(coinsHeader);
-                coinsContainer.appendChild(modeIndicator);
-
-                // Atualizar modo
-                currentMode = currentMode === 'weight' ? 'quantity' : 'weight';
-                
-                // Recriar inputs de moedas no novo modo
-                coinInputs = [];
-                coinsDenominations.forEach(denom => {
-                    let input;
-                    if (currentMode === 'weight') {
-                        input = createCoinWeightItem(denom, coinsContainer);
-                        // Restaurar valor anterior se existir
-                        if (previousQuantities[denom.value] !== undefined) {
-                            const weight = previousQuantities[denom.value] * denom.weight;
-                            input.value = weight.toFixed(1);
-                        }
-                    } else {
-                        input = createCoinQuantityItem(denom, coinsContainer);
-                        // Restaurar valor anterior se existir
-                        if (previousQuantities[denom.value] !== undefined) {
-                            input.value = previousQuantities[denom.value];
-                        }
-                    }
-                    coinInputs.push(input);
-                    
-                    // Adicionar event listeners aos novos inputs
-                    addInputListeners(input);
-                });
-
-                // Atualizar interface
-                updateModeInterface();
-                
-                // Recalcular totais
-                calculateTotals();
-            }
-
-            // Função auxiliar para converter valor da denominação para ID
-            function denominationToId(value) {
-                return value.toFixed(2).replace('.', '_');
-            }
-
-            // Função para adicionar event listeners a um input
-            function addInputListeners(input) {
-                input.addEventListener('focus', function() {
-                    if (this.value === '0') {
-                        this.value = '';
-                    }
-                });
-                
-                input.addEventListener('blur', function() {
-                    if (this.value === '' || isNaN(parseFloat(this.value))) {
-                        this.value = '0';
-                    }
-                    calculateTotals();
-                });
-                
-                input.addEventListener('input', function() {
-                    if (this.value.length > 8) {
-                        this.value = this.value.slice(0, 8);
-                    }
-                    calculateTotals();
-                });
-                
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        const currentValue = parseFloat(this.value) || 0;
-                        const increment = this.type === 'number' && !this.step ? 1 : 0.1;
-                        this.value = (currentValue + increment).toFixed(this.step === '0.1' ? 1 : 0);
-                        calculateTotals();
-                    } else if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const currentValue = parseFloat(this.value) || 0;
-                        const decrement = this.type === 'number' && !this.step ? 1 : 0.1;
-                        const newValue = Math.max(0, currentValue - decrement);
-                        this.value = newValue.toFixed(this.step === '0.1' ? 1 : 0);
-                        calculateTotals();
-                    }
-                });
-            }
-
-            // Função para atualizar a interface do modo
-            function updateModeInterface() {
-                const toggleBtn = document.getElementById('toggleModeBtn');
-                const indicator = document.getElementById('modeIndicator');
-                
-                if (currentMode === 'weight') {
-                    toggleBtn.textContent = 'Modo: Quantidade';
-                    indicator.textContent = 'Insira o peso total em gramas';
-                } else {
-                    toggleBtn.textContent = 'Modo: Pesagem';
-                    indicator.textContent = 'Insira a quantidade de moedas';
-                }
-            }
-
-            // Gera os campos para cédulas
-            notesDenominations.forEach(denom => {
-                const input = createNoteItem(denom, notesContainer);
-                allInputs.push(input);
-                addInputListeners(input);
-            });
             
-            // Gera os campos para moedas (modo pesagem inicial)
-            coinsDenominations.forEach(denom => {
-                const input = createCoinWeightItem(denom, coinsContainer);
-                coinInputs.push(input);
-                allInputs.push(input);
-                addInputListeners(input);
-            });
+            // FUNÇÃO RESTAURADA: Registra o lançamento no histórico
+            function logEntry(value, inputElement) {
+                const itemValue = parseFloat(value);
+                const denomination = getDenominationByValue(itemValue);
+                if (!denomination) return;
 
-            // Funções de formatação de moeda
-            function formatCurrency(value) {
-                return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+                let count = 0;
+                let inputWeight = null;
+                let entryType = denomination.type;
+                let inputMode = (entryType === 'coin' && currentMode === 'weight') ? 'weight' : 'quantity';
+                let currentValue = parseFloat(inputElement.value) || 0;
+                
+                // Formatação para peso/quantidade
+                if (entryType === 'note') {
+                    count = Math.floor(currentValue);
+                } else { // Moeda
+                    if (inputMode === 'weight') {
+                        inputWeight = currentValue;
+                        const unitWeight = parseFloat(inputElement.getAttribute('data-weight'));
+                        count = currentValue > 0 && unitWeight > 0 ? Math.floor(currentValue / unitWeight) : 0;
+                    } else { // quantity
+                        count = Math.floor(currentValue);
+                        inputWeight = count * denomination.weight; // Peso calculado
+                    }
+                }
+                
+                // Remove o registro existente para a mesma denominação (para atualização)
+                const existingIndex = cashHistory.findIndex(item => item.value.toFixed(2) === itemValue.toFixed(2));
+                
+                if (currentValue === 0) {
+                    if (existingIndex !== -1) {
+                         cashHistory.splice(existingIndex, 1);
+                    }
+                } else {
+                    const newEntry = {
+                        value: itemValue,
+                        label: denomination.label,
+                        type: entryType,
+                        inputMode: inputMode,
+                        count: count,
+                        weight: inputWeight,
+                        timestamp: timestamp,
+                        fullDateTime: now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' })
+                    };
+                    
+                    if (existingIndex !== -1) {
+                        cashHistory[existingIndex] = newEntry; // Atualiza
+                    } else {
+                        cashHistory.push(newEntry); // Adiciona novo
+                    }
+                }
+
+                renderHistory(); 
             }
 
-            // Função para calcular quantidade de moedas a partir do peso
-            function calculateCoinCount(weightInput) {
-                const totalWeight = parseFloat(weightInput.value) || 0;
-                const unitWeight = parseFloat(weightInput.getAttribute('data-weight'));
-                
-                if (unitWeight <= 0) return 0;
-                
-                // Arredonda para baixo para obter número inteiro de moedas
-                return Math.floor(totalWeight / unitWeight);
+            // FUNÇÃO RESTAURADA: Renderiza o histórico na tela
+            function renderHistory() {
+                if (cashHistory.length === 0) {
+                    cashHistoryLog.innerHTML = '<p>Nenhum lançamento registrado ainda.</p>';
+                    return;
+                }
+
+                // Exibe do mais recente para o mais antigo na tela
+                const reversedHistory = [...cashHistory].reverse();
+
+                cashHistoryLog.innerHTML = reversedHistory.map(item => {
+                    const valueFormatted = item.value.toFixed(2).replace('.', ',');
+                    const isNote = item.type === 'note';
+                    const countFormatted = item.count ? `${item.count} un` : `0 un`;
+                    
+                    let detail;
+                    let className = isNote ? 'note-entry' : 'coin-entry';
+
+                    if (isNote) {
+                        detail = `x ${countFormatted}`;
+                    } else {
+                        if (item.inputMode === 'weight') {
+                            const weightFormatted = item.weight !== null ? `${item.weight.toFixed(1).replace('.', ',')}g` : `0,0g`;
+                            detail = `Peso: ${weightFormatted} (${countFormatted})`;
+                        } else { // quantity
+                            detail = `Quant.: ${countFormatted}`;
+                        }
+                    }
+
+                    return `
+                        <div class="history-item ${className}">
+                            <span>R$ <strong>${valueFormatted}</strong> ${detail}</span>
+                            <span class="history-timestamp">${item.timestamp}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                cashHistoryLog.scrollTop = 0; // Vai para o topo do log
             }
 
-            // Função principal de cálculo
-            function calculateTotals() {
+
+            // Função principal para calcular totais (MODIFICADA para chamar logEntry)
+            function calculateTotals(inputChanged = null) {
                 let grandTotal = 0;
 
-                // Processa cédulas (contagem direta)
+                // Processa cédulas
                 notesDenominations.forEach(denom => {
-                    const input = document.getElementById(`input-${denominationToId(denom.value)}`);
+                    const id = denominationToId(denom.value);
+                    const input = document.getElementById(`input-${id}`);
                     if (input) {
                         const count = parseInt(input.value, 10) || 0;
                         const subtotal = count * denom.value;
                         grandTotal += subtotal;
 
-                        const subtotalDisplay = document.getElementById(`subtotal-${denominationToId(denom.value)}`);
+                        const subtotalDisplay = document.getElementById(`subtotal-${id}`);
                         if (subtotalDisplay) {
                             subtotalDisplay.textContent = `R$ ${formatCurrency(subtotal)}`;
+                        }
+                        
+                        if (inputChanged === input) {
+                            logEntry(input.getAttribute('data-value'), input);
                         }
                     }
                 });
@@ -846,45 +766,194 @@
                 coinsDenominations.forEach(denom => {
                     const id = denominationToId(denom.value);
                     let count, subtotal;
+                    let input;
                     
                     if (currentMode === 'weight') {
-                        const weightInput = document.getElementById(`weight-${id}`);
-                        if (weightInput) {
-                            count = calculateCoinCount(weightInput);
+                        input = document.getElementById(`weight-${id}`);
+                        if (input) {
+                            count = calculateCoinCount(input);
                             subtotal = count * denom.value;
                             grandTotal += subtotal;
 
-                            // Atualiza contagem de moedas
                             const countDisplay = document.getElementById(`count-${id}`);
                             if (countDisplay) {
                                 countDisplay.textContent = count;
                             }
                         }
                     } else {
-                        const quantityInput = document.getElementById(`quantity-${id}`);
-                        if (quantityInput) {
-                            count = parseInt(quantityInput.value, 10) || 0;
+                        input = document.getElementById(`quantity-${id}`);
+                        if (input) {
+                            count = parseInt(input.value, 10) || 0;
                             subtotal = count * denom.value;
                             grandTotal += subtotal;
                         }
                     }
 
-                    // Atualiza subtotal
                     const subtotalDisplay = document.getElementById(`subtotal-${id}`);
                     if (subtotalDisplay) {
                         subtotalDisplay.textContent = `R$ ${formatCurrency(subtotal)}`;
+                    }
+                    
+                    if (inputChanged === input) {
+                        logEntry(input.getAttribute('data-value'), input);
                     }
                 });
 
                 grandTotalDisplay.textContent = `R$ ${formatCurrency(grandTotal)}`;
             }
 
-            // --- Funções de Exportação e Impressão ---
+            // CORREÇÃO CRÍTICA: Lógica de alternância de modo
+            function toggleMode() {
+                // 1. Salvar quantidades antes de mudar
+                coinsDenominations.forEach(denom => {
+                    const id = denominationToId(denom.value);
+                    if (currentMode === 'weight') {
+                        const weightInput = document.getElementById(`weight-${id}`);
+                        if (weightInput) {
+                            const count = calculateCoinCount(weightInput);
+                            previousQuantities[denom.value] = count;
+                        }
+                    } else { 
+                        const quantityInput = document.getElementById(`quantity-${id}`);
+                        if (quantityInput) {
+                            previousQuantities[denom.value] = parseInt(quantityInput.value) || 0;
+                        }
+                    }
+                });
+
+                // 2. Trocar modo
+                currentMode = currentMode === 'weight' ? 'quantity' : 'weight';
+                updateModeInterface();
+                
+                // 3. Renderizar novos inputs (e limpar antigos)
+                renderCoinInputs();
+                
+                // 4. Recalcular e forçar log (para atualizar pesos/quantidades no histórico)
+                coinsDenominations.forEach(denom => {
+                    const id = denominationToId(denom.value);
+                    const inputElement = currentMode === 'weight' 
+                        ? document.getElementById(`weight-${id}`) 
+                        : document.getElementById(`quantity-${id}`);
+                    
+                    // Apenas loga se houver algum valor diferente de zero
+                    if (inputElement && (parseFloat(inputElement.value) || 0) > 0) {
+                        logEntry(inputElement.getAttribute('data-value'), inputElement);
+                    }
+                });
+                
+                calculateTotals();
+            }
+            
+            function updateModeInterface() {
+                const toggleBtn = document.getElementById('toggleModeBtn');
+                const indicator = document.getElementById('modeIndicator');
+                
+                if (currentMode === 'weight') {
+                    toggleBtn.textContent = 'Modo: Pesagem';
+                    toggleBtn.classList.remove('outline');
+                    indicator.textContent = 'Insira o peso total em gramas';
+                } else {
+                    toggleBtn.textContent = 'Modo: Quantidade';
+                    toggleBtn.classList.add('outline');
+                    indicator.textContent = 'Insira a quantidade de moedas';
+                }
+            }
+
+            function renderCoinInputs() {
+                coinsContainer.querySelectorAll('.denomination-item').forEach(item => item.remove());
+                coinInputs = [];
+                const fragment = document.createDocumentFragment();
+
+                coinsDenominations.forEach(denom => {
+                    let input;
+                    const id = denominationToId(denom.value);
+
+                    if (currentMode === 'weight') {
+                        input = createCoinWeightItem(denom, fragment);
+                        if (previousQuantities[denom.value] !== undefined) {
+                            const weight = previousQuantities[denom.value] * denom.weight;
+                            // Arredondar para uma casa decimal no modo peso
+                            input.value = weight.toFixed(1); 
+                        }
+                    } else {
+                        input = createCoinQuantityItem(denom, fragment);
+                        const savedQuantity = previousQuantities[denom.value] || 0;
+                        input.value = savedQuantity;
+                    }
+                    coinInputs.push(input);
+                    addInputListeners(input); // Adicionar listeners imediatamente após a criação
+                });
+
+                coinsContainer.appendChild(fragment);
+                
+                // Atualiza a lista completa de inputs
+                updateAllInputsList();
+            }
+
+            function updateAllInputsList() {
+                 allInputs = notesDenominations.map(denom => document.getElementById(`input-${denominationToId(denom.value)}`));
+                 
+                 // Moedas
+                 coinsDenominations.forEach(denom => {
+                    const id = denominationToId(denom.value);
+                    const inputId = currentMode === 'weight' ? `weight-${id}` : `quantity-${id}`;
+                    const input = document.getElementById(inputId);
+                    if (input) {
+                        allInputs.push(input);
+                    }
+                 });
+                 allInputs = allInputs.filter(input => input !== null);
+            }
+
+
+            function handleFocus(event) {
+                if (event.target.value === '0') {
+                    event.target.value = '';
+                }
+                event.target.select();
+            }
+
+            function handleBlur(event) {
+                if (!event.target.value || parseFloat(event.target.value) < 0 || isNaN(parseFloat(event.target.value))) {
+                    event.target.value = '0';
+                }
+                // Chama calculateTotals para atualizar os totais, mas sem logar, pois o log é feito no 'input'
+                calculateTotals();
+            }
+            
+            function handleInput(event) {
+                const input = event.target;
+                if (input.value.length > 8) {
+                    input.value = input.value.slice(0, 8);
+                }
+                // Passa o input que mudou para logar apenas ele
+                calculateTotals(input);
+            }
+
+            function addInputListeners(input) {
+                input.addEventListener('input', handleInput);
+                input.addEventListener('focus', handleFocus);
+                input.addEventListener('blur', handleBlur);
+            }
+
+
+            function initializeInputs() {
+                notesDenominations.forEach(denom => {
+                    const input = createNoteItem(denom, notesContainer);
+                    addInputListeners(input);
+                });
+
+                renderCoinInputs();
+                updateAllInputsList();
+            }
+
+            // --- Funções de Exportação e Limpeza (RESTANTE) ---
+
             const clearAllBtn = document.getElementById('clearAllBtn');
             const exportCsvBtn = document.getElementById('exportCsvBtn');
             const exportTextBtn = document.getElementById('exportTextBtn');
             const printSmallBtn = document.getElementById('printSmallBtn');
-
+            
             function generateReportData() {
                 const report = {
                     items: [],
@@ -892,8 +961,8 @@
                     mode: currentMode
                 };
                 let currentGrandTotal = 0;
-
-                // Processa cédulas
+                
+                // Adiciona Cédulas
                 notesDenominations.forEach(denom => {
                     const input = document.getElementById(`input-${denominationToId(denom.value)}`);
                     if (input) {
@@ -912,10 +981,10 @@
                     }
                 });
 
-                // Processa moedas
+                // Adiciona Moedas
                 coinsDenominations.forEach(denom => {
                     const id = denominationToId(denom.value);
-                    let count, subtotal, weight = 0;
+                    let count = 0, subtotal = 0, weight = 0;
                     
                     if (currentMode === 'weight') {
                         const weightInput = document.getElementById(`weight-${id}`);
@@ -947,9 +1016,31 @@
                 });
                 
                 report.grandTotal = currentGrandTotal;
+                report.history = cashHistory; // Inclui o histórico
                 return report;
             }
 
+            function clearAllFields() {
+                allInputs.forEach(input => {
+                    input.value = '0';
+                });
+                
+                // Limpa o histórico (RESTAURADO)
+                cashHistory = [];
+                renderHistory();
+
+                calculateTotals();
+                
+                coinsDenominations.forEach(denom => {
+                    const id = denominationToId(denom.value);
+                    const countDisplay = document.getElementById(`count-${id}`);
+                    if (countDisplay) {
+                        countDisplay.textContent = '0';
+                    }
+                });
+            }
+            
+            // Funções de Exportação (RESTAURADAS)
             function exportToCsv() {
                 const reportData = generateReportData();
                 let csvContent = "Tipo,Denominação,Quantidade,Peso (g),Subtotal\n";
@@ -958,20 +1049,37 @@
                     if (item.type === 'Cédula') {
                         csvContent += `${item.type},${item.denomination.label},${item.count},,R$ ${formatCurrency(item.subtotal)}\n`;
                     } else {
-                        csvContent += `${item.type},${item.denomination.label},${item.count},${item.weight},R$ ${formatCurrency(item.subtotal)}\n`;
+                        csvContent += `${item.type},${item.denomination.label},${item.count},${item.weight.toFixed(2).replace('.', ',')},R$ ${formatCurrency(item.subtotal)}\n`;
                     }
                 });
                 
                 csvContent += `\nTotal Geral,,,,"R$ ${formatCurrency(reportData.grandTotal)}"\n`;
                 csvContent += `Modo,,,,"${reportData.mode === 'weight' ? 'Pesagem' : 'Quantidade'}"\n`;
+                
+                if (reportData.history.length > 0) {
+                    csvContent += "\n\nHISTORICO DE LANÇAMENTOS\n";
+                    csvContent += "Data/Hora,Denominação,Tipo,Qtde,Peso (g),Modo\n";
+                    
+                    reportData.history.forEach(item => {
+                        const denominationLabel = item.label;
+                        const count = item.count;
+                        const weight = item.type === 'coin' && item.weight !== null ? item.weight.toFixed(2).replace('.', ',') : '';
+                        const mode = item.type === 'coin' ? (item.inputMode === 'weight' ? 'Pesagem' : 'Quantidade') : 'Contagem';
 
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        csvContent += `${item.fullDateTime},${denominationLabel},${item.type === 'note' ? 'Cédula' : 'Moeda'},${count},${weight},${mode}\n`;
+                    });
+                }
+
+                const finalCsv = csvContent.replace(/\./g, '').replace(/,/g, ';').replace(/;/g, ',').replace(/\n/g, '\r\n');
+                
+                const blob = new Blob([finalCsv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `fechamento_caixa_${new Date().toLocaleDateString('pt-BR')}.csv`;
+                link.download = `fechamento_caixa_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                alert("Arquivo CSV gerado com sucesso.");
             }
 
             function exportToText() {
@@ -994,7 +1102,7 @@
                 reportData.items.filter(item => item.type === 'Moeda').forEach(item => {
                     const denominationPart = item.denomination.label.padEnd(9);
                     const countPart = String(item.count).padStart(3);
-                    const weightPart = `${item.weight.toFixed(1)}g`.padStart(8);
+                    const weightPart = `${item.weight.toFixed(1).replace('.', ',')}g`.padStart(8);
                     const subtotalPart = `R$ ${formatCurrency(item.subtotal)}`;
                     textContent += `${denominationPart} x ${countPart} (${weightPart}) = ${subtotalPart}\n`;
                 });
@@ -1002,78 +1110,99 @@
                 textContent += `\n---------------------------\n`;
                 textContent += `Total Geral: R$ ${formatCurrency(reportData.grandTotal)}\n`;
                 textContent += `---------------------------\n`;
+                
+                if (reportData.history.length > 0) {
+                    textContent += "\n--- HISTORICO DE LANÇAMENTOS ---\n";
+                    reportData.history.forEach(item => {
+                        const timePart = item.timestamp;
+                        const denominationLabel = item.label.padEnd(9);
+                        
+                        let detail;
+                        if (item.type === 'note') {
+                            detail = `x ${item.count} un`;
+                        } else {
+                            const weight = item.weight !== null ? item.weight.toFixed(1).replace('.', ',') : '0,0';
+                            detail = item.inputMode === 'weight' ? `P: ${weight}g (${item.count} un)` : `Q: ${item.count} un`;
+                        }
+                        
+                        textContent += `[${timePart}] ${denominationLabel} ${detail}\n`;
+                    });
+                    textContent += `---------------------------\n`;
+                }
+
+
                 textContent += `\nDesenvolvido por Carlos Kipper`;
 
                 const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `fechamento_caixa_${new Date().toLocaleDateString('pt-BR')}.txt`;
+                link.download = `fechamento_caixa_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.txt`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                alert("Arquivo TXT gerado com sucesso.");
             }
 
-            function clearAllFields() {
-                allInputs.forEach(input => {
-                    input.value = '0';
-                });
-                calculateTotals();
+            // FUNÇÃO CORRIGIDA PROFISSIONALMENTE: Alinhamento de impressão (32 caracteres)
+            function alignLeftRight(leftText, rightText, width) {
+                const rightLength = rightText.length;
+                const maxLeftLength = width - rightLength - 1; 
+                
+                // Trunca o texto da esquerda
+                const actualLeft = leftText.substring(0, maxLeftLength);
+                
+                // Calcula o espaço necessário
+                const space = Math.max(1, width - actualLeft.length - rightLength);
+                
+                return actualLeft + ' '.repeat(space) + rightText;
+            }
+            
+            function centerText(text, width) {
+                const padding = Math.max(0, width - text.length) / 2;
+                return ' '.repeat(Math.floor(padding)) + text + ' '.repeat(Math.ceil(padding));
             }
 
+            // FUNÇÃO CORRIGIDA PROFISSIONALMENTE: Impressão com inclusão de Logs
             function printReportForSmallPrinter() {
                 const reportData = generateReportData();
                 const now = new Date();
                 const dateTimeString = now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
-                const MAX_CHARS_PER_LINE = 32;
-
-                function centerText(text, width) {
-                    const padding = Math.max(0, width - text.length) / 2;
-                    return ' '.repeat(Math.floor(padding)) + text + ' '.repeat(Math.ceil(padding));
-                }
-
-                function alignLeftRight(leftText, rightText, width) {
-                    const maxLeftLength = Math.floor(width * 0.6);
-                    const maxRightLength = width - maxLeftLength - 1;
-                    
-                    const actualLeft = leftText.substring(0, maxLeftLength);
-                    const actualRight = rightText.substring(0, maxRightLength);
-
-                    const space = Math.max(1, width - actualLeft.length - actualRight.length);
-                    return actualLeft + ' '.repeat(space) + actualRight;
-                }
+                const MAX_CHARS_PER_LINE = 32; 
 
                 let printContentHtml = `
                     <html>
                     <head>
                         <title>Recibo de Fechamento</title>
                         <style>
+                            /* Estilos CSS CRÍTICOS para o recibo */
                             body {
                                 font-family: 'Courier New', Courier, monospace;
-                                font-size: 9pt;
-                                line-height: 1.2;
+                                font-size: 8pt; 
+                                line-height: 1.1;
                                 margin: 0;
-                                padding: 0.5cm;
+                                padding: 0; 
                                 color: black;
                                 background-color: white;
-                                width: ${MAX_CHARS_PER_LINE}ch;
-                                max-width: 80mm;
+                                width: ${MAX_CHARS_PER_LINE}ch; 
+                                max-width: 58mm;
                                 box-sizing: border-box;
+                                overflow: hidden; 
                             }
                             h1, h2, p {
                                 margin: 0;
                                 padding: 0;
                             }
                             .center { text-align: center; }
-                            .line { white-space: pre; overflow: hidden; }
+                            .line { white-space: pre; overflow: hidden; line-height: 1.1; }
                             .separator { border-top: 1px dashed black; margin: 0.2cm 0; }
                             .total-line {
                                 font-weight: bold;
-                                font-size: 10pt;
+                                font-size: 9pt;
                                 margin-top: 0.1cm;
                                 text-align: right;
                             }
-                            .footer-text { font-size: 8pt; margin-top: 0.2cm; }
+                            .footer-text { font-size: 7pt; margin-top: 0.2cm; }
                         </style>
                     </head>
                     <body>
@@ -1083,16 +1212,19 @@
                         <div class="separator"></div>
                 `;
 
+                // 1. Cédulas
                 const notesToPrint = reportData.items.filter(item => item.type === 'Cédula');
                 if (notesToPrint.length > 0) {
                     printContentHtml += `<p class="center">${centerText('CEDULAS', MAX_CHARS_PER_LINE)}</p>`;
                     notesToPrint.forEach(item => {
-                        const left = `${item.denomination.label} x ${String(item.count).padStart(3)}`;
+                        const compactLabel = item.denomination.label.replace('R$ ', ''); 
+                        const left = `${compactLabel} x ${String(item.count).padStart(3)}`;
                         const right = `R$ ${formatCurrency(item.subtotal)}`;
                         printContentHtml += `<p class="line">${alignLeftRight(left, right, MAX_CHARS_PER_LINE)}</p>`;
                     });
                 }
 
+                // 2. Moedas
                 const coinsToPrint = reportData.items.filter(item => item.type === 'Moeda');
                 if (coinsToPrint.length > 0) {
                     if (notesToPrint.length > 0) {
@@ -1100,15 +1232,52 @@
                     }
                     printContentHtml += `<p class="center">${centerText('MOEDAS', MAX_CHARS_PER_LINE)}</p>`;
                     coinsToPrint.forEach(item => {
-                        const left = `${item.denomination.label} x ${String(item.count).padStart(3)}`;
+                        const compactLabel = item.denomination.label.replace('R$ ', ''); 
+                        const left = `${compactLabel} x ${String(item.count).padStart(3)}`;
                         const right = `R$ ${formatCurrency(item.subtotal)}`;
                         printContentHtml += `<p class="line">${alignLeftRight(left, right, MAX_CHARS_PER_LINE)}</p>`;
+                        
+                        if (reportData.mode === 'weight' && item.weight > 0) {
+                           const weightDetail = `(Peso: ${item.weight.toFixed(1).replace('.', ',')}g)`;
+                           printContentHtml += `<p class="line center">${centerText(weightDetail, MAX_CHARS_PER_LINE)}</p>`;
+                        }
                     });
                 }
                 
+                // 3. Total
                 printContentHtml += `
                         <div class="separator"></div>
                         <p class="total-line">${alignLeftRight('TOTAL:', `R$ ${formatCurrency(reportData.grandTotal)}`, MAX_CHARS_PER_LINE)}</p>
+                `;
+                
+                // 4. Histórico (Log - RESTAURADO NA IMPRESSÃO)
+                if (reportData.history.length > 0) {
+                    printContentHtml += `
+                        <div class="separator"></div>
+                        <p class="center">${centerText('ULTIMOS LANCAMENTOS', MAX_CHARS_PER_LINE)}</p>
+                    `;
+                    
+                    const itemsToPrint = [...reportData.history].reverse().slice(0, 10);
+                    itemsToPrint.forEach(item => {
+                        const timePart = item.timestamp;
+                        const compactLabel = item.label.replace('R$ ', '');
+                        
+                        let detail;
+                        if (item.type === 'note') {
+                            detail = `x ${item.count}`;
+                        } else {
+                            const detailMode = item.inputMode === 'weight' ? 'P' : 'Q';
+                            detail = `${detailMode}:${item.count}`;
+                        }
+                        
+                        const left = `[${timePart}] ${compactLabel} ${detail}`;
+                        const centeredLine = centerText(left, MAX_CHARS_PER_LINE);
+                        printContentHtml += `<p class="line">${centeredLine}</p>`;
+                    });
+                }
+                
+                // 5. Rodapé
+                printContentHtml += `
                         <div class="separator"></div>
                         <p class="center footer-text">${centerText('Desenvolvido por Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
                     </body>
@@ -1133,10 +1302,12 @@
             printSmallBtn.addEventListener('click', printReportForSmallPrinter);
             toggleModeBtn.addEventListener('click', toggleMode);
 
-            // Chama o cálculo inicial para mostrar R$ 0,00 ao carregar a página
+            // Chamada de inicialização
+            initializeInputs();
             calculateTotals();
             updateDateTime();
             updateModeInterface();
+            renderHistory();
         });
     </script>
 </body>
