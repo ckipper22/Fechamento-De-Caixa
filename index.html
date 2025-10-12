@@ -2,28 +2,78 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Log com Data e Hora</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log com Data e Hora (Tudo em um HTML)</title>
+
     <style>
-        /* Estilos simples */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .btn-add {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background-color: #45a049;
+        }
+
+        .btn-clear {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background-color: #da190b;
+        }
+
         #log-container {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
+            background-color: #fff;
             padding: 10px;
-            max-height: 300px;
-            overflow-y: scroll; /* Scroll para logs mais antigos */
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto; /* Scroll para logs mais antigos */
             display: flex;
-            flex-direction: column-reverse; /* Faz com que os logs novos apareçam primeiro, indo "para baixo" */
+            flex-direction: column-reverse; /* Faz com que os logs NOVOS apareçam primeiro (embaixo) */
         }
+
         .log-entry {
-            border-bottom: 1px dashed #eee;
-            padding: 5px 0;
+            padding: 8px 0;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
         }
-        .log-entry:first-child {
-            border-bottom: none;
+        
+        /* O primeiro item é o log mais antigo (por causa do column-reverse), 
+           então ele não precisa de borda superior */
+        #log-container .log-entry:first-child { 
+            border-top: none;
         }
+
         .timestamp {
             font-weight: bold;
             color: #555;
-            margin-right: 10px;
+            margin-right: 15px;
+            flex-shrink: 0; /* Impede que o timestamp diminua */
+            width: 150px; /* Largura fixa para alinhamento */
         }
     </style>
 </head>
@@ -31,13 +81,116 @@
 
     <h1>Registro de Logs</h1>
 
-    <button onclick="adicionarLog('Novo evento registrado!')">Adicionar Log</button>
-    <button onclick="limparLogs()">Limpar Todos os Logs</button>
+    <button class="btn-add" onclick="adicionarLog('Novo evento registrado automaticamente.')">Adicionar Log Automático</button>
+    <button class="btn-clear" onclick="limparLogs()">Limpar Todos os Logs</button>
 
-    <h2>Logs:</h2>
+    <h2>Logs (Mais Recente Abaixo):</h2>
     <div id="log-container">
         </div>
 
-    <script src="script.js"></script>
+    <script>
+        const LOG_STORAGE_KEY = 'registrosDeLog';
+
+        // --- Funções Principais ---
+
+        // Função para adicionar um novo registro de log
+        function adicionarLog(mensagem) {
+            // 1. Obter o array de logs atual
+            let logs = obterLogs();
+
+            // 2. Criar o novo objeto de log
+            const novoLog = {
+                mensagem: mensagem,
+                timestamp: new Date().toISOString() // Cria um carimbo de data/hora no formato ISO (fácil de ordenar)
+            };
+
+            // 3. Adicionar o novo log ao array
+            logs.push(novoLog);
+
+            // 4. Salvar o array atualizado no localStorage
+            localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+
+            // 5. Atualizar a exibição na tela
+            exibirLogs();
+        }
+
+        // Função para carregar os logs do localStorage
+        function obterLogs() {
+            const logsSalvos = localStorage.getItem(LOG_STORAGE_KEY);
+            // Retorna o array parseado, ou um array vazio se não houver logs
+            return logsSalvos ? JSON.parse(logsSalvos) : [];
+        }
+
+        // Função para exibir os logs na interface
+        function exibirLogs() {
+            const logs = obterLogs();
+            const container = document.getElementById('log-container');
+            container.innerHTML = ''; // Limpa o container antes de adicionar os novos logs
+
+            logs.forEach(log => {
+                const entryDiv = document.createElement('div');
+                entryDiv.classList.add('log-entry');
+
+                // Formata a data e hora
+                const dataHoraFormatada = formatarData(log.timestamp);
+
+                entryDiv.innerHTML = `
+                    <span class="timestamp">${dataHoraFormatada}</span>
+                    <span>${log.mensagem}</span>
+                `;
+                
+                /*
+                O CSS (flex-direction: column-reverse) inverte a ordem de exibição,
+                então adicionar usando appendChild fará com que o log mais novo
+                apareça na parte de baixo do container, conforme solicitado.
+                */
+                container.appendChild(entryDiv);
+            });
+            
+            // Rola para a parte inferior para ver o log mais recente
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Função para limpar todos os logs
+        function limparLogs() {
+            if (confirm("Tem certeza que deseja limpar todos os logs?")) {
+                localStorage.removeItem(LOG_STORAGE_KEY);
+                exibirLogs(); // Atualiza a tela para mostrar que está vazio
+            }
+        }
+
+
+        // --- Funções Auxiliares ---
+
+        // Função para formatar o timestamp ISO para um formato mais legível
+        function formatarData(isoString) {
+            const data = new Date(isoString);
+            
+            // Configuração de formatação para data e hora
+            const opcoes = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false // Formato 24h
+            };
+
+            return data.toLocaleDateString('pt-BR', opcoes).replace(',', ' -');
+        }
+
+
+        // --- Inicialização ---
+
+        // Carregar e exibir os logs existentes quando a página é carregada
+        document.addEventListener('DOMContentLoaded', () => {
+             // Exemplo de log inicial (será adicionado apenas se não houver logs)
+            if (obterLogs().length === 0) {
+                 adicionarLog('Início da aplicação. Log de teste.');
+            }
+            exibirLogs();
+        });
+    </script>
 </body>
 </html>
