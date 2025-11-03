@@ -190,13 +190,27 @@ document.addEventListener('DOMContentLoaded',()=>{
     {value:0.05,   label:'R$ 0,05',   isCoin:true,  weight:3.2},
   ];
 
-  // MÉTODOS DE PAGAMENTO ATUALIZADOS
+  // MÉTODOS DE PAGAMENTO ATUALIZADOS - ORDEM SOLICITADA PELO USUÁRIO
   const PAYMENT_METHODS = [
-    'Visa Débito', 'Visa Crédito', 'Visa Parcelado',
-    'Master Débito', 'Master Crédito', 'Master Parcelado',
-    'Banrisul À Vista', 'Banrisul A Prazo', 'Banrisul Parcelado',
-    'Crediário', 'Convênio',
-    'Cartão Depósito em Conta', 'Pix Off-line', 'Pix Seguro'
+    'Good Card',
+    'Depósito em Conta', 
+    'Pix Off-line', 
+    'Pix Seguro',
+    'Visa Débito', 
+    'Visa Crédito', 
+    'Visa Parcelado',
+    'Master Débito', 
+    'Master Crédito', 
+    'Master Parcelado',
+    'Banrisul Débito', // 'Banrisul À Vista' mudado para 'Banrisul Débito'
+    'Banrisul A Prazo', 
+    'Banrisul Parcelado',
+    'Elo Débito', 
+    'Elo Crédito', 
+    'Elo Parcelado',
+    'Crediário', 
+    'Convênio',
+    'Reembolsos' // Adicionado Reembolsos
   ];
   
   // Método para Retirada (único)
@@ -357,22 +371,25 @@ document.addEventListener('DOMContentLoaded',()=>{
     const id = cssId(method);
 
     let titleClass = '';
+    const lowerCaseMethod = method.toLowerCase();
+    
     if(isPayment){
-        const lowerCaseMethod = method.toLowerCase();
-        if(lowerCaseMethod.includes('débito') || lowerCaseMethod.includes('pix seguro')){
-            titleClass = 'title-green'; 
-        } else if(lowerCaseMethod.includes('crédito') || lowerCaseMethod.includes('parcelado') || lowerCaseMethod.includes('a prazo')){
-            titleClass = 'title-blue'; 
-        } 
+        if(lowerCaseMethod.includes('débito') || lowerCaseMethod.includes('pix seguro') || lowerCaseMethod.includes('depósito')){
+            titleClass = 'title-green'; // Débito, Pix Seguro e Depósito (Recebimento Imediato)
+        } else if(lowerCaseMethod.includes('crédito') || lowerCaseMethod.includes('parcelado') || lowerCaseMethod.includes('a prazo') || lowerCaseMethod.includes('crediário')){
+            titleClass = 'title-blue'; // Crédito, Parcelado, A Prazo, Crediário (Recebimento Futuro)
+        } else if(lowerCaseMethod.includes('reembolsos')){
+             titleClass = 'title-red'; // Reembolsos são saídas de caixa
+        }
+        // Outros (Good Card, Convênio, Pix Off-line) ficam com o fundo cinza padrão
     } else {
-        titleClass = 'title-red'; 
+        titleClass = 'title-red'; // Retirada (Saída de Caixa)
     }
 
     const wrapper = document.createElement('div');
     wrapper.className = 'card mb-4';
     wrapper.style.padding = '12px';
     
-    // HTML SEM O BOTÃO ADICIONAR
     wrapper.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div style="flex:1;">
@@ -519,7 +536,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Limpar Pagamentos
   document.getElementById('clearPaymentsBtn').addEventListener('click', ()=>{
     if(!confirm('Apagar TODOS os pagamentos?')) return;
-    PAYMENT_METHODS.forEach(m => payments[m] = []);
+    // Precisa garantir que a nova lista de métodos seja limpa, mas sem perder o registro no objeto payments
+    // Simplesmente apagamos todas as entradas no objeto payments para os métodos existentes
+    PAYMENT_METHODS.forEach(m => payments[m] = []); 
+    
+    // NOTA: Se houver métodos antigos no localStorage que não estão em PAYMENT_METHODS, eles ainda estariam lá.
+    // Como estamos forçando o init a zerar, não teremos esse problema.
     saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
   });
   
@@ -537,7 +559,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       localStorage.setItem('withdrawals_v1', JSON.stringify(withdrawals));
   }
 
-  // ===== Relatórios / Export / Impressão (Ajustado para compactação) =====
+  // ===== Relatórios / Export / Impressão (Mantidos) =====
   function generateReport(){
     // caixa
     let billsTotal = 0, coinsTotal = 0;
@@ -613,7 +635,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     
     // Total Geral
     txt += `\n----------------\n`;
-    txt += `TOTAL GERAL CAIXA: ${money(r.cashTotal + r.paymentsTotal)}\n`;
+    txt += `TOTAL CAIXA (Dinheiro + Pagamentos): ${money(r.cashTotal + r.paymentsTotal)}\n`;
     
     const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fechamento_${new Date().toISOString().slice(0,10)}.txt`; a.click();
@@ -752,6 +774,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     // 2. Zera pagamentos e retiradas
     payments = {};
     withdrawals = {};
+    // Cria entradas vazias para todos os novos métodos, incluindo os novos
     PAYMENT_METHODS.forEach(m => { payments[m] = []; });
     withdrawals[WITHDRAWAL_METHOD] = [];
     
