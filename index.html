@@ -1,831 +1,776 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fechamento de Caixa - Com Pesagem/Quantidade</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Variáveis de Cores e Estilo - LIGHT MODE (Padrão) */
-        :root {
-            --primary: #4f46e5; /* Indigo */
-            --secondary: #2563eb; /* Blue */
-            --accent: #10b981; /* Emerald (Verde para o botão salvar) */
-            --background: #f4f7fa; /* Light Gray Background */
-            --card-background: #ffffff; /* Fundo Branco do Card */
-            --text-color: #1f2937; /* Texto Escuro */
-            --muted-text-color: #6b7280; /* Texto Suave (Gray 500) */
-            --border-color: #e5e7eb; /* Borda Clara (Gray 200) */
-            --focus-ring: rgba(79, 70, 229, 0.5);
-            --warning: #f59e0b; /* Amarelo (Amber 500) */
-            --error: #ef4444; /* Vermelho (Red 500) */
-        }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Fechamento de Caixa — Contagem + Pagamentos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:#f4f7fb;color:#111827;padding:18px;}
+  .card{background:white;border:1px solid #e6edf3;border-radius:12px;padding:16px;box-shadow:0 6px 16px rgba(15,23,42,0.04);}
+  .input-field{border:1px solid #e6edf3;border-radius:8px;padding:8px;width:100%;box-sizing:border-box;}
+  .small-btn{padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600; font-size: 0.85rem;} 
+  .muted{color:#6b7280}
+  .denom-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9} 
+  
+  /* Larguras reduzidas para as colunas de Dinheiro */
+  .denom-label{width:90px} 
+  .denom-input{width:100px} 
+  .denom-total{width:90px;text-align:right;font-weight:700; font-size: 0.95rem;} 
+  
+  .payments-list{max-height:180px;overflow:auto;margin-top:10px}
+  .payment-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#fafbff;border:1px solid #eef2ff;margin-bottom:8px}
+  .value-large{font-weight:800;font-size:1.05rem}
+  .no-select{user-select:none}
+  textarea.input-field{min-height:60px; resize: vertical;} 
+  
+  /* LAYOUT PRINCIPAL: 1.2 parte para Cédulas, 1.2 parte para Moedas, 2.6 partes para Pagamentos */
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr 2.6fr; 
+    gap: 24px;
+  }
+  .payments-section {
+    grid-column: 3 / 4;
+  }
+  .withdrawals-section {
+    grid-column: 1 / 3; 
+  }
 
-        /* Reset e Fontes */
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background);
-            color: var(--text-color);
-        }
+  /* Novo estilo para o título do método de pagamento/retirada */
+  .method-title {
+    font-weight: 800; 
+    font-size: 1.1rem; 
+    color: #1f2937; 
+    padding: 4px 8px; 
+    border-radius: 4px;
+    background-color: #f3f4f6; 
+    display: inline-block; 
+  }
 
-        /* Container Principal do Aplicativo */
-        .cash-counter-app {
-            width: 100%;
-            max-width: 900px; 
-            margin: 20px auto;
-            background-color: var(--background); 
-            border-radius: 16px;
-            padding: 24px;
-        }
+  /* Classes para destaque de cor */
+  .title-green { background-color: #d1fae5; color: #065f46; } 
+  .title-blue { background-color: #e0e7ff; color: #4338ca; } 
+  .title-red { background-color: #fee2e2; color: #991b1b; } 
 
-        /* Card Básico para Agrupamento */
-        .card-panel {
-            background-color: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Sombra mais leve */
-        }
 
-        /* Estilo dos Inputs de Denominação */
-        .currency-row {
-            display: grid;
-            grid-template-columns: 1fr 100px 1fr;
-            align-items: center;
-            margin-bottom: 8px;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .currency-row:last-child {
-            border-bottom: none;
-        }
-        .currency-label-value {
-            font-weight: 500;
-            color: var(--text-color);
-        }
-        .input-field {
-            width: 90px;
-            padding: 4px 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            text-align: center;
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--text-color);
-            background-color: #f9fafb; /* Fundo do input levemente cinza */
-            transition: border-color 0.2s;
-            -webkit-appearance: none;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px var(--focus-ring);
-        }
-        .denomination-total {
-            text-align: right;
-            font-weight: 600;
-            color: var(--accent);
-        }
+  @media (max-width:1100px){
+      .grid-container{
+        grid-template-columns: 1fr 1fr; 
+      }
+      .payments-section {
+        grid-column: 1 / 3;
+      }
+      .withdrawals-section{
+        grid-column: 1 / 3;
+      }
+  }
 
-        /* Seção de Instruções */
-        .instruction-box {
-            background-color: #eef2ff; /* Um azul muito claro */
-            border-left: 4px solid var(--primary);
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .instruction-box ul {
-            list-style: disc;
-            margin-left: 20px;
-            font-size: 0.9rem;
-            color: var(--muted-text-color);
-        }
-        .instruction-box li {
-            margin-bottom: 5px;
-        }
-
-        /* Estilo para Totais (Geral) */
-        .total-display {
-            text-align: right;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            padding-top: 10px;
-            border-top: 2px solid var(--border-color);
-            margin-top: 10px;
-        }
-
-        /* Ajustes no Saldo Final */
-        .card-panel.balance-panel {
-            background-color: #ecfdf5; /* Fundo verde claro para Saldo Final */
-            border: 1px solid #10b981; /* Borda verde */
-        }
-        .card-panel.balance-panel .text-green-400 { /* Mantido para sobrescrever o estilo do JS */
-             color: #047857; /* Verde escuro */
-        }
-        
-        /* Histórico */
-        .history-list {
-            max-height: 150px;
-            font-size: 0.9rem;
-        }
-
-        /* Botões */
-        .btn {
-            padding: 8px 15px;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-        /* BOTÃO DE SALVAR (VERDE) */
-        #printSmallBtn {
-            background-color: var(--accent) !important;
-            color: white;
-        }
-        #printSmallBtn:hover {
-            background-color: #047857 !important; 
-        }
-        
-    </style>
+  @media (max-width:768px){
+    .grid-container{
+        grid-template-columns: 1fr;
+    }
+    .payments-section, .withdrawals-section{
+        grid-column: auto;
+    }
+  }
+</style>
 </head>
 <body>
+  <div style="max-width:1200px;margin:0 auto;">
 
-    <div class="cash-counter-app">
+    <div class="card mb-6">
+      <h1 style="font-size:20px;color:#4f46e5;font-weight:800">Fechamento de Caixa — Contagem + Pagamentos</h1>
+      <p id="currentDate" class="muted mt-1">segunda-feira, --/--/---- às --:--</p>
+      <p class="muted text-sm mt-2">Modo moedas: escolha <strong>Quantidade</strong> ou <strong>Pesagem</strong> (g). Em pagamentos/retiradas você pode digitar <code>2+2+3+4</code> ou valores com vírgula.</p>
+    </div>
+
+    <div class="grid-container">
+
+      <div class="card">
+        <h2 class="font-semibold mb-2">Cédulas</h2>
+        <div id="billsContainer">
+          </div>
+        <div class="mt-4 text-right">
+          <div class="muted">Total cédulas:</div>
+          <div id="billsTotal" class="value-large">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="font-semibold mb-2">Moedas — <span id="modeLabel" class="font-bold">Modo: QUANTIDADE</span></h2>
+        <p class="muted text-sm">Insira a quantidade ou o peso (g) conforme o modo.</p>
+        <div id="coinsContainer" class="mt-3">
+          </div>
+        <div class="mt-4 flex gap-3">
+          <button id="toggleModeBtn" class="small-btn bg-blue-600 text-white">Mudar Modo (QTD / PESAGEM)</button>
+          <button id="clearCashBtn" class="small-btn" style="background:#fee2e2;border:1px solid #fca5a5;">Limpar Contagem</button>
+        </div>
+        <div class="mt-4 text-right">
+          <div class="muted">Total moedas:</div>
+          <div id="coinsTotal" class="value-large">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="card payments-section">
+        <h2 class="font-semibold mb-2">Pagamentos (Cartões / Crediário / PIX)</h2>
+        <div id="paymentsContainer" style="max-height:480px;overflow:auto;">
+          </div>
+
+        <div class="mt-4 flex items-center justify-between">
+          <div>
+            <div class="muted">Total Pagamentos (não-dinheiro):</div>
+            <div id="paymentsTotalDisplay" class="value-large">R$ 0,00</div>
+          </div>
+          <div class="flex gap-2">
+            <button id="clearPaymentsBtn" class="small-btn" style="background:#fee2e2;border:1px solid #fca5a5;">Limpar pagamentos</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card withdrawals-section">
+        <h2 class="font-semibold mb-2">Dinheiro Retirado do Caixa (Sangria/Retirada)</h2>
+        <div id="withdrawalsContainer" style="max-height:220px;overflow:auto;">
+          </div>
         
-        <div class="header text-center mb-6 border-b pb-4 border-gray-200">
-            <h1 class="text-3xl font-bold text-primary">Fechamento de Caixa - Com Pesagem/Quantidade</h1>
-            <p id="currentDateTime" class="text-sm text-muted-text-color mt-1"></p>
+        <div class="mt-4 flex items-center justify-between">
+          <div>
+            <div class="muted">Total Retirado:</div>
+            <div id="withdrawalsTotalDisplay" class="value-large" style="color:#dc2626">R$ 0,00</div>
+          </div>
+          <div class="flex gap-2">
+            <button id="clearWithdrawalsBtn" class="small-btn" style="background:#fee2e2;border:1px solid #fca5a5;">Limpar Retiradas</button>
+          </div>
         </div>
-        
-        <div class="instruction-box">
-            <h4 class="font-bold text-primary mb-2">Instruções</h4>
-            <ul>
-                <li>**Modo Pesagem**: Insira o peso total em gramas para calcular automaticamente a quantidade</li>
-                <li>**Modo Quantidade**: Insira a quantidade diretamente de cada moeda</li>
-                <li>Use o botão de alternância para mudar entre os modos</li>
-            </ul>
-        </div>
+      </div>
+      
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-            
-            <div id="billInputsContainer" class="card-panel">
-                <h2 class="text-xl font-bold mb-3 text-center text-primary">Cédulas</h2>
-                <div id="billInputs"></div>
-            </div>
+    <div class="card mt-6">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <div class="muted">Total Caixa (cédulas + moedas):</div>
+          <div id="cashTotalDisplay" class="value-large">R$ 0,00</div>
 
-            <div id="coinInputsContainer" class="card-panel">
-                 <h2 class="text-xl font-bold mb-3 text-center text-primary">Moedas | <span id="modeIndicator" class="text-sm font-semibold text-accent">Modo: QUANTIDADE</span></h2>
-                 <p id="modeHelperText" class="text-center text-muted-text-color text-xs mb-3">Insira a quantidade de moedas</p>
-                <div id="coinInputs"></div>
-            </div>
-        </div>
-        
-        <div class="card-panel">
-            <div class="total-display">
-                Total Geral: <span id="grandTotal">R$ 0,00</span>
-            </div>
-
-             <div class="withdrawal-section mt-5">
-                <label for="withdrawalAmount" class="block font-bold text-gray-700 mb-2">VALOR PARA DEPÓSITO (ENVELOPE):</label>
-                <input type="number" id="withdrawalAmount" class="input-field text-xl" value="0.00" min="0" step="0.01" inputmode="decimal" placeholder="0.00" style="width: 100%; text-align: left; background-color: #f9fafb; color: var(--text-color);">
-            </div>
-            
-            <div class="card-panel balance-panel mt-5">
-                <span class="block font-bold text-xl text-green-400">SALDO FINAL:</span>
-                <span id="cashBalanceDisplay" class="text-2xl font-extrabold text-green-400">R$ 0,00</span>
-            </div>
+          <div class="muted mt-2">Total Pagamentos (Cartões/Crediário/PIX):</div>
+          <div id="paymentsTotalFooter" class="value-large">R$ 0,00</div>
+          
+          <div class="muted mt-2">Dinheiro Retirado:</div>
+          <div id="withdrawalsTotalFooter" class="value-large" style="color:#dc2626">R$ 0,00</div>
         </div>
 
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            <div class="md:col-span-1">
-                 <h3 class="text-lg font-bold text-primary mb-3">Ações</h3>
-                <div class="action-buttons grid grid-cols-2 gap-3">
-                    <button id="toggleModeBtn" class="btn bg-secondary text-white hover:bg-blue-700 py-3 transition duration-150 col-span-2">Mudar Modo (QTD/PESO)</button>
-                    <button id="clearAllBtn" class="btn bg-warning text-gray-900 hover:bg-yellow-600 py-3 transition duration-150">Limpar Tudo</button>
-                    <button id="printSmallBtn" class="btn py-3 transition duration-150 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M5 4H15V6H5V4Z" />
-                            <path fill-rule="evenodd" d="M10 18a.75.75 0 01-.75-.75v-3.5a.75.75 0 011.5 0v3.5a.75.75 0 01-.75.75z" clip-rule="evenodd" />
-                            <path fill-rule="evenodd" d="M3 8a3 3 0 013-3h8a3 3 0 013 3v6a3 3 0 01-3 3H6a3 3 0 01-3-3V8zm3 1.5a1.5 1.5 0 00-1.5 1.5v3a1.5 1.5 0 001.5 1.5h8a1.5 1.5 0 001.5-1.5v-3a1.5 1.5 0 00-1.5-1.5H6z" clip-rule="evenodd" />
-                        </svg>
-                        Salvar e Imprimir
-                    </button>
-
-                    <button id="exportCsvBtn" class="btn bg-gray-300 text-gray-800 hover:bg-gray-400 py-2 transition duration-150">Exportar CSV</button>
-                    <button id="exportTextBtn" class="btn bg-gray-300 text-gray-800 hover:bg-gray-400 py-2 transition duration-150">Exportar TXT</button>
-                </div>
-            </div>
-
-            <div class="md:col-span-2">
-                 <div class="card-panel notes-section no-print">
-                    <label for="notes" class="block font-semibold mb-2 text-primary">Observações:</label>
-                    <textarea id="notes" class="input-field p-2" placeholder="Ex: Faltou troco R$ 5,00." style="width: 100%; min-height: 80px; text-align: left;"></textarea>
-                </div>
-
-                <div class="card-panel history-section no-print">
-                    <h2 class="text-lg font-semibold mb-3 text-primary">Histórico de Lançamentos</h2>
-                    <ul id="cashHistoryLog" class="history-list">
-                        <li style="justify-content: center; color: var(--muted-text-color);">Nenhum lançamento registrado ainda.</li>
-                    </ul>
-                </div>
-            </div>
-
+        <div style="width:380px">
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <button id="exportCsvBtn" class="small-btn" style="background:#efefef;">Exportar CSV</button>
+            <button id="exportTxtBtn" class="small-btn" style="background:#efefef;">Exportar TXT</button>
+            <button id="printBtn" class="small-btn bg-green-600 text-white col-span-2">Salvar e Imprimir</button>
+          </div>
         </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+
+  // ===== Configurações de denominações =====
+  const DENOMINATIONS = [
+    {value:200.00, label:'R$ 200,00', isCoin:false, weight:0.9},
+    {value:100.00, label:'R$ 100,00', isCoin:false, weight:0.9},
+    {value:50.00,  label:'R$ 50,00',  isCoin:false, weight:0.9},
+    {value:20.00,  label:'R$ 20,00',  isCoin:false, weight:0.9},
+    {value:10.00,  label:'R$ 10,00',  isCoin:false, weight:0.9},
+    {value:5.00,   label:'R$ 5,00',   isCoin:false, weight:0.9},
+    {value:2.00,   label:'R$ 2,00',   isCoin:false, weight:0.9},
+    {value:1.00,   label:'R$ 1,00',   isCoin:true,  weight:7.0},
+    {value:0.50,   label:'R$ 0,50',   isCoin:true,  weight:6.8},
+    {value:0.25,   label:'R$ 0,25',   isCoin:true,  weight:5.7},
+    {value:0.10,   label:'R$ 0,10',   isCoin:true,  weight:4.8},
+    {value:0.05,   label:'R$ 0,05',   isCoin:true,  weight:3.2},
+  ];
+
+  // MÉTODOS DE PAGAMENTO ATUALIZADOS
+  const PAYMENT_METHODS = [
+    'Visa Débito', 'Visa Crédito', 'Visa Parcelado',
+    'Master Débito', 'Master Crédito', 'Master Parcelado',
+    'Banrisul À Vista', 'Banrisul A Prazo', 'Banrisul Parcelado',
+    'Crediário', 'Convênio',
+    'Cartão Depósito em Conta', 'Pix Off-line', 'Pix Seguro'
+  ];
+  
+  // Método para Retirada (único)
+  const WITHDRAWAL_METHOD = 'Retirada';
+
+  // Estado (Variáveis de Estado)
+  let currentMode = localStorage.getItem('cashCounterMode') || 'quantity'; 
+  let cashCounts = {}; 
+  let payments = {}; 
+  let withdrawals = {}; 
+  
+  // DOM refs
+  const billsContainer = document.getElementById('billsContainer');
+  const coinsContainer = document.getElementById('coinsContainer');
+  const modeLabel = document.getElementById('modeLabel');
+  const billsTotalEl = document.getElementById('billsTotal');
+  const coinsTotalEl = document.getElementById('coinsTotal');
+  const cashTotalDisplay = document.getElementById('cashTotalDisplay');
+  const paymentsContainer = document.getElementById('paymentsContainer');
+  const paymentsTotalDisplay = document.getElementById('paymentsTotalDisplay');
+  const paymentsTotalFooter = document.getElementById('paymentsTotalFooter');
+  const withdrawalsContainer = document.getElementById('withdrawalsContainer');
+  const withdrawalsTotalDisplay = document.getElementById('withdrawalsTotalDisplay');
+  const withdrawalsTotalFooter = document.getElementById('withdrawalsTotalFooter');
+  const clearWithdrawalsBtn = document.getElementById('clearWithdrawalsBtn');
+
+  // util
+  function cssId(s){ return s.toString().replace(/\./g,'_').replace(/[, ]/g,'').replace(/[^a-zA-Z0-9_\-]/g,''); }
+  function fmt(v){ const n = Number(v)||0; return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function money(v){ return 'R$ ' + fmt(v); }
+
+  // atualiza data topo
+  function updateDate(){ const now = new Date(); const d = now.toLocaleDateString('pt-BR',{weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'}); const h = now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); document.getElementById('currentDate').textContent = `${d} às ${h}`; }
+  setInterval(updateDate,1000); updateDate();
+
+  // Função centralizada para atualizar todos os totais e saldos
+  function updateAllTotals(){
+    let totalPayments = 0;
+    PAYMENT_METHODS.forEach(m => { totalPayments += (payments[m] || []).reduce((s,x)=>s + Number(x.value||0),0); });
+    
+    // Calcula o total de retiradas
+    let totalWithdrawals = (withdrawals[WITHDRAWAL_METHOD] || []).reduce((s,x)=>s + Number(x.value||0),0);
+
+    paymentsTotalDisplay.textContent = money(totalPayments);
+    paymentsTotalFooter.textContent = money(totalPayments);
+    
+    withdrawalsTotalDisplay.textContent = money(totalWithdrawals);
+    withdrawalsTotalFooter.textContent = money(totalWithdrawals);
+
+    calculateTotals(); 
+  }
+
+  // calcula totais (cédulas e moedas) 
+  function calculateTotals(){
+    let billsTotal = 0;
+    let coinsTotal = 0;
+    DENOMINATIONS.forEach(d => {
+      const id = cssId(d.value.toFixed(2));
+      const inp = document.getElementById(`input-${id}`);
+      if(!inp) return;
+      let v = parseFloat(inp.value) || 0;
+      cashCounts[id] = inp.value;
+      
+      let total = 0;
+      if(d.isCoin && currentMode === 'weight'){
+        const weightValue = d.weight > 0 ? d.weight : 1; 
+        const qty = v / weightValue; 
+        total = qty * d.value;
+      } else {
+        const qty = Math.round(v);
+        total = qty * d.value;
+      }
+      
+      if(d.isCoin) coinsTotal += total; else billsTotal += total;
+      document.getElementById(`total-${id}`).textContent = money(total);
+    });
+    
+    localStorage.setItem('cashCounts', JSON.stringify(cashCounts));
+    billsTotalEl.textContent = money(billsTotal);
+    coinsTotalEl.textContent = money(coinsTotal);
+    
+    const cashTotal = billsTotal + coinsTotal;
+    cashTotalDisplay.textContent = money(cashTotal);
+
+    // Saldo Final (antigo) foi removido
+  }
+
+  // render cédulas e moedas
+  function renderDenominations(){
+    billsContainer.innerHTML = '';
+    coinsContainer.innerHTML = '';
+    DENOMINATIONS.forEach(d => {
+      const id = cssId(d.value.toFixed(2));
+      const row = document.createElement('div');
+      row.className = 'denom-row';
+      const label = document.createElement('div'); label.className='denom-label'; label.textContent = d.label;
+      const inputWrap = document.createElement('div');
+      inputWrap.style.flex = '1';
+      const initialValue = (cashCounts[id] !== undefined) 
+                         ? cashCounts[id] 
+                         : (d.isCoin && currentMode==='weight' ? '0.00' : '0');
+
+      inputWrap.innerHTML = `<input id="input-${id}" class="input-field denom-input" type="number" min="0" step="${d.isCoin && currentMode==='weight' ? '0.01' : '1'}" value="${initialValue}" autocomplete="off">`;
+      const totalDiv = document.createElement('div'); totalDiv.className='denom-total'; totalDiv.id = `total-${id}`; totalDiv.textContent = money(0);
+      row.appendChild(label);
+      row.appendChild(inputWrap);
+      row.appendChild(totalDiv);
+      if(d.isCoin){
+        coinsContainer.appendChild(row);
+      } else {
+        billsContainer.appendChild(row);
+      }
+      const inp = row.querySelector(`#input-${id}`);
+      inp.addEventListener('input', updateAllTotals); 
+      inp.addEventListener('blur', ()=>{
+        let v = parseFloat(inp.value) || 0;
+        if(d.isCoin && currentMode === 'weight') inp.value = v.toFixed(2);
+        else inp.value = Math.round(v);
+      });
+    });
+    updateAllTotals(); 
+  }
+
+  // clear cash
+  document.getElementById('clearCashBtn').addEventListener('click', ()=>{
+    if(!confirm('Limpar todas as quantidades de cédulas e moedas?')) return;
+    DENOMINATIONS.forEach(d=>{ const id = cssId(d.value.toFixed(2)); const inp = document.getElementById(`input-${id}`); if(inp) inp.value = (d.isCoin && currentMode==='weight') ? '0.00' : '0'; });
+    updateAllTotals();
+  });
+
+  // toggle modo QTD/PESAGEM
+  function updateModeLabel(){ modeLabel.textContent = (currentMode==='quantity') ? 'Modo: QUANTIDADE' : 'Modo: PESAGEM'; }
+  document.getElementById('toggleModeBtn').addEventListener('click', ()=>{
+    currentMode = (currentMode==='quantity') ? 'weight' : 'quantity';
+    localStorage.setItem('cashCounterMode', currentMode);
+    updateModeLabel();
+    renderDenominations();
+  });
+  updateModeLabel();
+
+  // ===== PAGAMENTOS / RETIRADAS (funções reutilizáveis) =====
+
+  // Função Corrigida: Trata operadores pendentes no final da expressão
+  function evaluateExpression(expr){
+    if(!expr) return 0;
+    let safeExpr = expr.replace(/,/g,'.').replace(/\s+/g,'');
+    safeExpr = safeExpr.replace(/[+\-*/]+$/,''); 
+    if(!safeExpr) return 0; 
+    if(!/^[0-9+\-*/().]+$/.test(safeExpr)) throw new Error('inv');
+    const fn = new Function('return ('+safeExpr+')');
+    const res = fn();
+    if(typeof res !== 'number' || !isFinite(res)) throw new Error('inv');
+    return Math.round((res + Number.EPSILON) * 100) / 100;
+  }
+  
+  // Função que constrói a UI de lançamento (Pagamentos e Retiradas)
+  function buildEntryUI(method, container, stateVar, labelText, isPayment = true){
+    const id = cssId(method);
+
+    let titleClass = '';
+    if(isPayment){
+        const lowerCaseMethod = method.toLowerCase();
+        if(lowerCaseMethod.includes('débito') || lowerCaseMethod.includes('pix seguro')){
+            titleClass = 'title-green'; 
+        } else if(lowerCaseMethod.includes('crédito') || lowerCaseMethod.includes('parcelado') || lowerCaseMethod.includes('a prazo')){
+            titleClass = 'title-blue'; 
+        } 
+    } else {
+        titleClass = 'title-red'; 
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'card mb-4';
+    wrapper.style.padding = '12px';
+    
+    // HTML SEM O BOTÃO ADICIONAR
+    wrapper.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div style="flex:1;">
+          <label class="method-title ${titleClass}">${labelText}</label>
+          <textarea id="pay-input-${id}" class="input-field" placeholder="ex: 10,50 + 2 + 3 + 4 + 5" style="margin-top:8px;" autocomplete="off"></textarea>
+          <div class="muted" style="margin-top:8px">Resultado Atual: <span id="pay-current-${id}" class="value-large">R$ 0,00</span></div>
         </div>
+        <div style="width:170px;text-align:right;">
+          <div class="muted">Total Acumulado:</div>
+          <div id="pay-total-${id}" class="value-large">R$ 0,00</div>
+        </div>
+      </div>
+      <div id="pay-list-${id}" class="payments-list" style="margin-top:10px"></div>
+    `;
+    container.appendChild(wrapper);
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Definições de Cédulas e Moedas (Valor, Nome, Multiplicador de Pesagem em gramas)
-            const DENOMINATIONS = [
-                { value: 200.00, name: 'R$ 200,00', weight: 0.9, isCoin: false }, 
-                { value: 100.00, name: 'R$ 100,00', weight: 0.9, isCoin: false },
-                { value: 50.00, name: 'R$ 50,00', weight: 0.9, isCoin: false },
-                { value: 20.00, name: 'R$ 20,00', weight: 0.9, isCoin: false },
-                { value: 10.00, name: 'R$ 10,00', weight: 0.9, isCoin: false },
-                { value: 5.00, name: 'R$ 5,00', weight: 0.9, isCoin: false },
-                { value: 2.00, name: 'R$ 2,00', weight: 0.9, isCoin: false },
-                // Moedas
-                { value: 1.00, name: 'R$ 1,00', weight: 7.0, isCoin: true },
-                { value: 0.50, name: 'R$ 0,50', weight: 6.8, isCoin: true },
-                { value: 0.25, name: 'R$ 0,25', weight: 5.7, isCoin: true },
-                { value: 0.10, name: 'R$ 0,10', weight: 4.8, isCoin: true },
-                { value: 0.05, name: 'R$ 0,05', weight: 3.2, isCoin: true },
-            ];
-            
-            // Constantes e Variáveis de Estado
-            let currentMode = 'quantity'; // Padrão: 'quantity'
-            let cashHistory = JSON.parse(localStorage.getItem('cashHistory')) || [];
-            
-            // Elementos DOM
-            const billInputsContainer = document.getElementById('billInputs');
-            const coinInputsContainer = document.getElementById('coinInputs');
-            const grandTotalDisplay = document.getElementById('grandTotal');
-            const cashBalanceDisplay = document.getElementById('cashBalanceDisplay'); 
-            const clearAllBtn = document.getElementById('clearAllBtn');
-            const exportCsvBtn = document.getElementById('exportCsvBtn');
-            const exportTextBtn = document.getElementById('exportTextBtn');
-            const printSmallBtn = document.getElementById('printSmallBtn');
-            const toggleModeBtn = document.getElementById('toggleModeBtn');
-            const notesInput = document.getElementById('notes');
-            const modeIndicator = document.getElementById('modeIndicator');
-            const modeHelperText = document.getElementById('modeHelperText');
-            const cashHistoryLog = document.getElementById('cashHistoryLog');
-            const dateTimeDisplay = document.getElementById('currentDateTime');
-            const withdrawalInput = document.getElementById('withdrawalAmount');
-            
-            let allInputs = [];
+    const inp = document.getElementById(`pay-input-${id}`);
+    const cur = document.getElementById(`pay-current-${id}`);
+    
+    // Atualização em tempo real (on input)
+    inp.addEventListener('input', ()=> {
+      try{ 
+          const v = evaluateExpression(inp.value); 
+          cur.textContent = money(v); 
+      } catch (e) { 
+          if (e.message === 'inv') cur.textContent = 'Inválido';
+      }
+    });
 
-            // --- Funções de Utilitário ---
+    // Adiciona o lançamento no BLUR (perda de foco)
+    inp.addEventListener('blur', () => {
+        addEntry(method, stateVar);
+    });
 
-            function formatCurrency(amount) {
-                const number = parseFloat(amount) || 0;
-                return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
+    // Adiciona o lançamento no ENTER
+    inp.addEventListener('keydown', ev => {
+      if(ev.key === 'Enter'){ 
+        ev.preventDefault(); 
+        addEntry(method, stateVar); 
+      }
+    });
+    
+    renderEntryList(method, stateVar, isPayment);
+  }
 
-            function updateDateTime() {
-                const now = new Date();
-                const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
-                const timeOptions = { hour: '2-digit', minute: '2-digit' };
-                
-                const dateStr = now.toLocaleDateString('pt-BR', dateOptions);
-                const timeStr = now.toLocaleTimeString('pt-BR', timeOptions);
-                
-                dateTimeDisplay.textContent = `${now.toLocaleDateString('pt-BR', { weekday: 'long' })}, ${dateStr} às ${timeStr}`;
-            }
-            setInterval(updateDateTime, 1000); 
+  // Função que adiciona o lançamento
+  function addEntry(method, stateVar){
+    const id = cssId(method);
+    const inp = document.getElementById(`pay-input-${id}`);
+    const cur = document.getElementById(`pay-current-${id}`);
+    const raw = inp.value.trim();
+    
+    if(!raw) return;
+    
+    let val;
+    try{ 
+        val = evaluateExpression(raw); 
+    } catch { 
+        alert('Expressão inválida. Use apenas números e operadores + - * / ( )'); 
+        inp.focus(); 
+        return; 
+    }
+    
+    if(val <= 0) { 
+        if(val === 0) {
+            inp.value = '';
+            cur.textContent = money(0);
+        } else {
+             alert('Valor precisa ser maior que zero.'); 
+             inp.focus();
+        }
+        return; 
+    }
+    
+    stateVar[method].push({expr: raw, value: val});
+    saveState();
+    renderEntryList(method, stateVar, (stateVar === payments));
+    updateAllTotals();
+    
+    inp.value = '';
+    cur.textContent = money(0);
+  }
 
-            // --- Lógica Principal de Cálculo ---
+  // Função que renderiza a lista de lançamentos
+  function renderEntryList(method, stateVar, isPayment){
+    const id = cssId(method);
+    const list = document.getElementById(`pay-list-${id}`);
+    list.innerHTML = '';
+    const arr = stateVar[method] || [];
+    if(arr.length === 0){ list.innerHTML = '<div class="muted">Nenhum lançamento.</div>'; return; }
+    
+    let total = 0;
+    arr.forEach((item, idx) => {
+      total += Number(item.value || 0);
+      const el = document.createElement('div');
+      el.className = 'payment-item';
+      el.innerHTML = `<div>${idx+1}. ${item.expr} = **${money(item.value)}**</div> 
+                      <div style="display:flex;gap:8px">
+                        <button class="small-btn" data-idx="${idx}" data-act="rem" style="background:#fee2e2;border:1px solid #fca5a5">Remover</button>
+                        <button class="small-btn" data-idx="${idx}" data-act="edit" style="background:#eef2ff;border:1px solid #cfe3ff">Editar</button>
+                      </div>`;
+      list.appendChild(el);
+    });
+    
+    // attach listeners
+    list.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', e => {
+        const i = Number(e.currentTarget.dataset.idx);
+        const act = e.currentTarget.dataset.act;
+        if(act === 'rem'){
+          if(!confirm('Remover item?')) return;
+          stateVar[method].splice(i,1);
+        } else if(act === 'edit'){
+          const old = stateVar[method][i].expr;
+          const novo = prompt('Editar expressão:', old);
+          if(novo === null) return;
+          try{
+            const v = evaluateExpression(novo);
+            stateVar[method][i] = { expr: novo, value: v };
+          } catch { alert('Expressão inválida.'); return; }
+        }
+        saveState(); renderEntryList(method, stateVar, isPayment); updateAllTotals();
+      });
+    });
 
-            function calculateTotals() {
-                let currentGrandTotal = 0;
-                
-                DENOMINATIONS.forEach(denomination => {
-                    const id = denomination.value.toFixed(2).replace('.', '-');
-                    const input = document.getElementById(`input-${id}`);
-                    const totalDisplay = document.getElementById(`total-${id}`);
+    // atualiza total do método
+    const totalEl = document.getElementById(`pay-total-${id}`);
+    if(totalEl) totalEl.textContent = money(total);
+  }
+  
+  // Constrói Pagamentos e Retiradas (função corrigida)
+  function buildPaymentsAndWithdrawalsUI(){
+      // 1. Pagamentos
+      paymentsContainer.innerHTML = ''; 
+      PAYMENT_METHODS.forEach(method => buildEntryUI(method, paymentsContainer, payments, method, true));
+      
+      // 2. Retiradas
+      withdrawalsContainer.innerHTML = ''; 
+      buildEntryUI(WITHDRAWAL_METHOD, withdrawalsContainer, withdrawals, 'Valor Retirado (Motivo/Detalhes)', false);
+      
+      updateAllTotals();
+  }
 
-                    if (input) {
-                        let value = parseFloat(input.value) || 0;
-                        let totalDenomination = 0;
-                        const isQuantityMode = currentMode === 'quantity' || !denomination.isCoin;
+  // Limpar Pagamentos
+  document.getElementById('clearPaymentsBtn').addEventListener('click', ()=>{
+    if(!confirm('Apagar TODOS os pagamentos?')) return;
+    PAYMENT_METHODS.forEach(m => payments[m] = []);
+    saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
+  });
+  
+  // Limpar Retiradas
+  clearWithdrawalsBtn.addEventListener('click', ()=>{
+    if(!confirm('Apagar TODAS as retiradas de caixa?')) return;
+    withdrawals[WITHDRAWAL_METHOD] = [];
+    saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
+  });
 
-                        if (isQuantityMode) {
-                            totalDenomination = value * denomination.value;
-                        } else {
-                            // MODO PESAGEM (Apenas Moedas)
-                            const weightPerUnit = denomination.weight;
-                            if (weightPerUnit > 0) {
-                                const quantity = value / weightPerUnit; 
-                                totalDenomination = quantity * denomination.value;
-                            }
-                        }
-                        
-                        currentGrandTotal += totalDenomination;
-                        if(totalDisplay) {
-                            totalDisplay.textContent = `R$ ${formatCurrency(totalDenomination)}`;
-                        }
-                    }
-                });
-                
-                const withdrawalAmount = parseFloat(withdrawalInput.value) || 0;
-                const cashBalance = currentGrandTotal - withdrawalAmount;
+  // Salva todos os estados
+  function saveState(){ 
+      localStorage.setItem('payments_v4', JSON.stringify(payments)); 
+      localStorage.setItem('cashCounts', JSON.stringify(cashCounts)); 
+      localStorage.setItem('withdrawals_v1', JSON.stringify(withdrawals));
+  }
 
-                grandTotalDisplay.textContent = `R$ ${formatCurrency(currentGrandTotal)}`;
-                cashBalanceDisplay.textContent = `R$ ${formatCurrency(cashBalance)}`;
-            }
+  // ===== Relatórios / Export / Impressão (Ajustado para compactação) =====
+  function generateReport(){
+    // caixa
+    let billsTotal = 0, coinsTotal = 0;
+    const cashDetails = [];
+    DENOMINATIONS.forEach(d => {
+      const id = cssId(d.value.toFixed(2));
+      const raw = document.getElementById(`input-${id}`)?.value || 0;
+      const val = parseFloat(raw) || 0;
+      let total = 0;
+      if(d.isCoin && currentMode === 'weight'){
+        const weightValue = d.weight > 0 ? d.weight : 1; 
+        const qty = val / weightValue;
+        total = qty * d.value;
+      } else {
+        const qty = Math.round(val);
+        total = qty * d.value;
+      }
+      if(d.isCoin) coinsTotal += total; else billsTotal += total;
+      cashDetails.push({name:d.label, input: raw, total});
+    });
 
-            // --- Lógica de Interface ---
+    // pagamentos
+    const payDetails = [];
+    let paymentsTotal = 0;
+    PAYMENT_METHODS.forEach(m => {
+      const arr = payments[m] || [];
+      const sum = arr.reduce((s,x)=>s+Number(x.value||0),0);
+      paymentsTotal += sum;
+      payDetails.push({method:m, items: arr.slice(), total: sum});
+    });
 
-            function createInputRow(denomination, isCoin) {
-                const id = denomination.value.toFixed(2).replace('.', '-');
-                
-                let placeholderText = '0';
-                let stepValue = '1';
-
-                // Se for MOEDA e MODO PESAGEM, altera os rótulos de input
-                if (isCoin && currentMode === 'weight') {
-                     placeholderText = '0.00';
-                     stepValue = '0.01';
-                }
-                
-                const row = document.createElement('div');
-                row.className = 'currency-row';
-                
-                row.innerHTML = `
-                    <span class="currency-label-value">${denomination.name}</span>
-                    <input type="number" id="input-${id}" class="input-field" value="${placeholderText}" min="0" step="${stepValue}" inputmode="decimal" placeholder="${placeholderText}" style="width: 100%;">
-                    <span id="total-${id}" class="denomination-total">R$ 0,00</span>
-                `;
-                
-                return row;
-            }
-
-            function renderCoinInputs() {
-                billInputsContainer.innerHTML = '';
-                coinInputsContainer.innerHTML = '';
-                
-                const bills = DENOMINATIONS.filter(d => !d.isCoin);
-                const coins = DENOMINATIONS.filter(d => d.isCoin);
-
-                // Renderiza Cédulas (Sempre em modo QTD)
-                bills.forEach(denomination => {
-                    billInputsContainer.appendChild(createInputRow(denomination, false));
-                });
-                
-                // Renderiza Moedas (Respeita o modo atual)
-                coins.forEach(denomination => {
-                    coinInputsContainer.appendChild(createInputRow(denomination, true));
-                });
-
-                updateAllInputsList();
-                initializeInputListeners();
-                calculateTotals();
-            }
-            
-            function updateAllInputsList() {
-                 allInputs = Array.from(document.querySelectorAll('.input-field'));
-                 if (notesInput) allInputs.push(notesInput);
-                 if (withdrawalInput) allInputs.push(withdrawalInput);
-            }
-
-            // Manipuladores de Foco e Blur
-            function handleFocus(event) {
-                const input = event.target;
-                const row = input.closest('.currency-row');
-                // Altera a cor de fundo da linha no foco
-                if (row) row.style.backgroundColor = 'rgba(79, 70, 229, 0.05)'; /* Primary light */
-            }
-
-            function handleBlur(event) {
-                const input = event.target;
-                const row = input.closest('.currency-row');
-                if (row) row.style.backgroundColor = 'transparent';
-                
-                let val = parseFloat(input.value) || 0;
-                if (input.type === 'number') {
-                     const denomination = DENOMINATIONS.find(d => `input-${d.value.toFixed(2).replace('.', '-')}` === input.id);
-                     
-                     const isQuantityInput = !denomination || denomination.isCoin && currentMode === 'quantity'; 
-
-                     if (isQuantityInput) {
-                        input.value = Math.round(val);
-                     } else {
-                        input.value = val.toFixed(2);
-                     }
-                }
-            }
-            
-            function addInputListeners(inputElement) {
-                inputElement.addEventListener('input', calculateTotals);
-                inputElement.addEventListener('focus', handleFocus);
-                inputElement.addEventListener('blur', handleBlur);
-            }
-
-            function initializeInputListeners() {
-                document.querySelectorAll('.input-field').forEach(addInputListeners);
-            }
-
-            function updateModeInterface() {
-                if (currentMode === 'quantity') {
-                    modeIndicator.textContent = 'Modo: QUANTIDADE';
-                    modeIndicator.className = 'text-sm font-semibold text-accent';
-                    modeHelperText.textContent = 'Insira a quantidade de moedas';
-                    toggleModeBtn.textContent = 'Mudar para Modo Pesagem (Moedas)';
-                } else {
-                    modeIndicator.textContent = 'Modo: PESAGEM';
-                    modeIndicator.className = 'text-sm font-semibold text-warning';
-                    modeHelperText.textContent = 'Insira o peso em gramas das moedas';
-                    toggleModeBtn.textContent = 'Mudar para Modo Quantidade';
-                }
-                renderCoinInputs();
-            }
-
-            // --- Funções de Ação ---
-
-            function toggleMode() {
-                currentMode = currentMode === 'quantity' ? 'weight' : 'quantity';
-                localStorage.setItem('cashCounterMode', currentMode);
-                clearAllFields(); 
-                updateModeInterface();
-            }
-
-            function clearAllFields() {
-                allInputs.forEach(input => {
-                    if (input.type === 'number') {
-                         input.value = input.id === 'withdrawalAmount' ? '0.00' : '0';
-                    } else if (input.tagName === 'TEXTAREA') {
-                        input.value = '';
-                    }
-                });
-                
-                calculateTotals();
-            }
-            
-            function generateReportData() {
-                 const report = {
-                    date: new Date().toLocaleDateString('pt-BR'),
-                    time: new Date().toLocaleTimeString('pt-BR'),
-                    mode: currentMode === 'quantity' ? 'QUANTIDADE' : 'PESAGEM (Moedas)', 
-                    details: [],
-                    notes: notesInput.value.trim(),
-                    grandTotal: 0,
-                    withdrawal: 0, 
-                    cashBalance: 0, 
-                    history: []
-                };
-
-                let currentGrandTotal = 0;
-                
-                DENOMINATIONS.forEach(denomination => {
-                    const input = document.getElementById(`input-${denomination.value.toFixed(2).replace('.', '-')}`);
-                    if (input) {
-                        const inputValue = parseFloat(input.value) || 0;
-                        let quantity = 0;
-                        let totalDenomination = 0;
-                        let inputTypeLabel = 'QTD';
-                        
-                        const isQuantityMode = currentMode === 'quantity' || !denomination.isCoin;
-
-                        if (isQuantityMode) {
-                            quantity = inputValue;
-                            totalDenomination = quantity * denomination.value;
-                            inputTypeLabel = 'QTD';
-
-                        } else {
-                            const weightPerUnit = denomination.weight;
-                            if (weightPerUnit > 0) {
-                                quantity = inputValue / weightPerUnit;
-                                totalDenomination = quantity * denomination.value;
-                            }
-                            inputTypeLabel = 'PESO (g)';
-                        }
-                        
-                        currentGrandTotal += totalDenomination;
-
-                        report.details.push({
-                            name: denomination.name,
-                            input: inputValue,
-                            inputTypeLabel: inputTypeLabel,
-                            quantity: Math.round(quantity),
-                            total: totalDenomination
-                        });
-                    }
-                });
-                
-                const withdrawalAmount = parseFloat(withdrawalInput.value) || 0;
-                
-                report.grandTotal = currentGrandTotal;
-                report.withdrawal = withdrawalAmount;
-                report.cashBalance = currentGrandTotal - withdrawalAmount; 
-                report.history = cashHistory;
-                return report;
-            }
-
-            function exportToCsv() {
-                const reportData = generateReportData();
-                const headers = ['Denominação', 'Input (Qtd/Peso)', 'Total']; 
-                let csvContent = headers.join(';') + '\n';
-
-                reportData.details.forEach(item => {
-                    if (item.total > 0) {
-                        const inputVal = item.input.toFixed(2).replace('.', ',');
-                        const totalVal = item.total.toFixed(2).replace('.', ',');
-                        csvContent += `${item.name} (${item.inputTypeLabel});"${inputVal}";"${totalVal}"\n`; 
-                    }
-                });
-                
-                csvContent += `\nTOTAL GERAL;;"${reportData.grandTotal.toFixed(2).replace('.', ',')}"\n`;
-                csvContent += `RETIRADA/DEPÓSITO;;"${reportData.withdrawal.toFixed(2).replace('.', ',')}"\n`;
-                csvContent += `SALDO FINAL;;"${reportData.cashBalance.toFixed(2).replace('.', ',')}"\n`;
-                csvContent += `Data;;"${reportData.date} ${reportData.time}"\n`;
-                csvContent += `Observações;;"${reportData.notes.replace(/\n/g, ' ')}"\n`;
-
-                downloadFile(csvContent, `Fechamento_Caixa_${reportData.date.replace(/\//g, '-')}.csv`, 'text/csv;charset=utf-8;');
-            }
-
-            function exportToText() {
-                const reportData = generateReportData();
-                let textContent = `--- Relatório de Fechamento de Caixa ---\n`;
-                textContent += `Data/Hora: ${reportData.date} ${reportData.time}\n`;
-                textContent += `Modo de Contagem: ${reportData.mode}\n\n`;
-
-                const detailLines = reportData.details.filter(item => item.total > 0).map(item => {
-                    const inputLabel = item.inputTypeLabel;
-                    const inputVal = item.input.toFixed(2);
-                    const totalVal = formatCurrency(item.total);
-                    return `${item.name.padEnd(10)} | ${inputLabel}: ${inputVal.padStart(8)} | TOTAL: R$ ${totalVal}`;
-                }).join('\n');
-                
-                textContent += detailLines;
-                textContent += '\n\n' + '-'.repeat(40) + '\n';
-                textContent += `TOTAL NO CAIXA: R$ ${formatCurrency(reportData.grandTotal)}\n`;
-                textContent += `RETIRADA/DEPÓSITO: R$ ${formatCurrency(reportData.withdrawal)}\n`;
-                textContent += `SALDO FINAL: R$ ${formatCurrency(reportData.cashBalance)}\n`;
-                
-                if (reportData.notes) {
-                    textContent += `\nObservações:\n${reportData.notes}\n`;
-                }
-                textContent += '-'.repeat(40) + '\n';
-
-                downloadFile(textContent, `Fechamento_Caixa_${reportData.date.replace(/\//g, '-')}.txt`, 'text/plain;charset=utf-8;');
-            }
-            
-            function downloadFile(content, filename, mimeType) {
-                const blob = new Blob([content], { type: mimeType });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            function printReportForSmallPrinter() {
-                 const reportData = generateReportData();
-                 saveHistoryEntry(reportData);
-
-                const MAX_CHARS_PER_LINE = 32;
-
-                function alignLeftRight(left, right, maxLen) {
-                    const space = maxLen - left.length - right.length;
-                    if (space > 0) {
-                        return left + ' '.repeat(space) + right;
-                    }
-                    return left + right; 
-                }
-
-                function centerText(text, maxLen) {
-                    if (text.length >= maxLen) return text;
-                    const padding = Math.floor((maxLen - text.length) / 2);
-                    return ' '.repeat(padding) + text;
-                }
-
-                let printContentHtml = `
-                    <html>
-                    <head>
-                        <title>Comprovante de Caixa</title>
-                        <style>
-                            /* OTIMIZAÇÃO PARA IMPRESSORA TÉRMICA */
-                            .print-small-container {
-                                width: 100%;
-                                max-width: 320px;
-                                padding: 10px;
-                                font-family: monospace;
-                                font-size: 10px;
-                                color: black; /* Garante tinta preta */
-                            }
-                            .print-small-container h3 {
-                                text-align: center;
-                                margin: 5px 0;
-                                font-size: 13px; /* Um pouco maior */
-                                font-weight: 900; /* Mais denso */
-                                border-bottom: 2px dashed black; /* Borda mais grossa */
-                                padding-bottom: 5px;
-                            }
-                            .print-small-container .total-line {
-                                font-weight: 900; /* Extra bold para Totais */
-                                margin: 4px 0;
-                                white-space: pre;
-                            }
-                            .print-small-container .separator {
-                                border-top: 1px dashed black;
-                                margin: 8px 0;
-                            }
-                            .print-small-container .detail-line {
-                                margin: 2px 0;
-                                font-size: 10px;
-                                white-space: pre;
-                                font-weight: bold; /* Detalhes em negrito para melhor definição */
-                            }
-                            .print-small-container .center {
-                                text-align: center;
-                            }
-                            .print-small-container .footer-text {
-                                font-size: 9px;
-                                margin: 2px 0;
-                                white-space: pre;
-                                font-weight: 900; /* Rodapé extra bold */
-                            }
-                            /* Remove margens da página para o cupom */
-                            @page { margin: 0; }
-                            body { margin: 0; padding: 0; }
-                        </style>
-                    </head>
-                    <body class="print-small-container">
-                        <h3>${centerText('FECHAMENTO DE CAIXA', MAX_CHARS_PER_LINE)}</h3>
-                        <p class="detail-line">${alignLeftRight('Data:', reportData.date, MAX_CHARS_PER_LINE)}</p>
-                        <p class="detail-line">${alignLeftRight('Hora:', reportData.time, MAX_CHARS_PER_LINE)}</p>
-                        <div class="separator"></div>
-                `;
-
-                // 2. Detalhes (Contagem)
-                reportData.details.filter(item => item.total > 0).forEach(item => {
-                    const inputLabel = `${item.inputTypeLabel} ${item.input.toFixed(2)}:`; 
-                    const line = alignLeftRight(`${item.name} (${inputLabel})`, `R$ ${formatCurrency(item.total)}`, MAX_CHARS_PER_LINE);
-                    printContentHtml += `<p class="detail-line">${line}</p>`;
-                });
-
-                // 3. Notas
-                if (reportData.notes) {
-                    printContentHtml += `<div class="separator"></div>`;
-                    printContentHtml += `<p class="detail-line" style="font-weight: 900;">OBSERVAÇÕES:</p>`;
-                    const notesLines = reportData.notes.match(new RegExp(`.{1,${MAX_CHARS_PER_LINE}}`, 'g'));
-                    notesLines.forEach(line => {
-                         printContentHtml += `<p class="detail-line" style="font-weight: bold;">${line}</p>`;
-                    });
-                }
-
-                // 4. Total e Retirada
-                printContentHtml += `
-                        <div class="separator"></div>
-                        <p class="total-line">${alignLeftRight('TOTAL NO CAIXA (BRUTO):', `R$ ${formatCurrency(reportData.grandTotal)}`, MAX_CHARS_PER_LINE)}</p>
-                `;
-                
-                if (reportData.withdrawal >= 0) {
-                     printContentHtml += `
-                        <p class="total-line" style="color: #ef4444; background-color: #f0f0f0; padding: 2px 0; ">${alignLeftRight('(-) DEPÓSITO/ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
-                        <p class="total-line">${alignLeftRight('(=) SALDO FINAL:', `R$ ${formatCurrency(reportData.cashBalance)}`, MAX_CHARS_PER_LINE)}</p>
-                    `;
-                }
-
-                // 5. Rodapé
-                printContentHtml += `
-                        <div class="separator"></div>
-                        <p class="center footer-text" style="font-size: 10px;">${centerText('INFORMAÇÕES PARA DEPÓSITO', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text">${alignLeftRight('CONTA CORRENTE:', '060 9694500', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text">${alignLeftRight('NOME:', 'Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
-                        <p class="footer-text">${alignLeftRight('FONE CONTATO:', '55 98455 7096', MAX_CHARS_PER_LINE)}</p>
-                        
-                        <p class="total-line" style="font-size: 12px; margin-top: 5px; font-weight: 900; background-color: #eee; padding: 4px 0;">${alignLeftRight('VALOR ENVELOPE:', `R$ ${formatCurrency(reportData.withdrawal)}`, MAX_CHARS_PER_LINE)}</p>
-                        
-                        <div class="separator"></div>
-                        <p class="center footer-text" style="font-weight: bold;">${centerText('Desenvolvido por Carlos Kipper', MAX_CHARS_PER_LINE)}</p>
-                    </body>
-                    </html>
-                `;
-
-                const printWindow = window.open('', '_blank', 'height=600,width=400');
-                if (printWindow) {
-                    printWindow.document.write(printContentHtml);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    
-                    printWindow.onload = () => {
-                         printWindow.print();
-                    };
-                } else {
-                    console.error("Por favor, permita pop-ups para imprimir o relatório.");
-                }
-            }
-            
-            // --- Lógica de Histórico ---
-
-            function saveHistoryEntry(reportData) {
-                const entry = {
-                    id: Date.now(),
-                    date: reportData.date,
-                    time: reportData.time,
-                    grandTotal: reportData.grandTotal,
-                    withdrawal: reportData.withdrawal,
-                    cashBalance: reportData.cashBalance
-                };
-                
-                cashHistory.unshift(entry);
-                if (cashHistory.length > 10) {
-                    cashHistory.pop();
-                }
-                
-                localStorage.setItem('cashHistory', JSON.stringify(cashHistory));
-                renderHistory();
-                clearAllFields(); 
-            }
-
-            function deleteHistoryEntry(id) {
-                cashHistory = cashHistory.filter(entry => entry.id !== id);
-                localStorage.setItem('cashHistory', JSON.stringify(cashHistory));
-                renderHistory();
-            }
-
-            function renderHistory() {
-                cashHistoryLog.innerHTML = '';
-                if (cashHistory.length === 0) {
-                    cashHistoryLog.innerHTML = '<li style="justify-content: center; color: var(--muted-text-color);">Nenhum lançamento registrado ainda.</li>';
-                    return;
-                }
-
-                cashHistory.forEach(entry => {
-                    const listItem = document.createElement('li');
-                    const dateTime = `${entry.date} ${entry.time}`;
-                    const totalDisplay = entry.withdrawal > 0 
-                        ? `Saldo: R$ ${formatCurrency(entry.cashBalance)}`
-                        : `Total: R$ ${formatCurrency(entry.grandTotal)}`;
-
-                    listItem.innerHTML = `
-                        <span class="history-date text-gray-500 flex-grow">${dateTime}</span>
-                        <span class="history-total font-semibold text-gray-700">${totalDisplay}</span>
-                        <button class="history-delete-btn bg-red-100 text-red-600 hover:bg-red-200 ml-3 p-1 rounded-full text-xs" data-id="${entry.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    `;
-                    cashHistoryLog.appendChild(listItem);
-                });
-
-                cashHistoryLog.querySelectorAll('.history-delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const targetButton = e.currentTarget.closest('button');
-                        deleteHistoryEntry(parseInt(targetButton.dataset.id));
-                    });
-                });
-            }
+    // retiradas
+    const withdrawalDetails = [];
+    let withdrawalsTotal = (withdrawals[WITHDRAWAL_METHOD] || []).reduce((s,x)=>s + Number(x.value||0),0);
+    withdrawalDetails.push({method: WITHDRAWAL_METHOD, items: (withdrawals[WITHDRAWAL_METHOD] || []).slice(), total: withdrawalsTotal});
 
 
-            // --- Inicialização ---
+    const cashTotal = billsTotal + coinsTotal;
+    const grandTotal = cashTotal + paymentsTotal; 
 
-            const savedMode = localStorage.getItem('cashCounterMode');
-            if (savedMode) {
-                currentMode = savedMode;
-            } else {
-                currentMode = 'quantity'; // Garante o padrão 'quantity'
-            }
-            
-            function initializeInputs() {
-                if (notesInput) {
-                    addInputListeners(notesInput);
-                }
-                
-                if (withdrawalInput) {
-                    addInputListeners(withdrawalInput);
-                    let val = parseFloat(withdrawalInput.value) || 0;
-                    withdrawalInput.value = val.toFixed(2);
-                }
-            }
+    return { cashDetails, billsTotal, coinsTotal, cashTotal, withdrawalsTotal, withdrawalDetails, paymentsTotal, payDetails, grandTotal };
+  }
 
+  // Export TXT
+  document.getElementById('exportTxtBtn').addEventListener('click', ()=>{
+    const r = generateReport();
+    let txt = `FECHAMENTO DE CAIXA\n${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}\n`;
+    
+    // Contagem de Dinheiro
+    txt += `\n--- DINHEIRO ---\n`;
+    r.cashDetails.forEach(d => {
+      if(Number(d.total) > 0) txt += `${d.name} (${d.input}) = ${money(d.total)}\n`;
+    });
+    txt += `\nTOTAL DINHEIRO: ${money(r.cashTotal)}\n`;
+    
+    // Pagamentos
+    txt += `\n--- PAGAMENTOS ---\n`;
+    r.payDetails.forEach(p => {
+      if(p.total === 0) return;
+      txt += `${p.method}: ${money(p.total)}\n`;
+      p.items.forEach((it, idx) => txt += `  -> ${it.expr} = ${money(it.value)}\n`);
+    });
+    txt += `\nTOTAL PAGAMENTOS: ${money(r.paymentsTotal)}\n`;
 
-            // Adiciona ouvintes de evento para os botões
-            clearAllBtn.addEventListener('click', clearAllFields);
-            exportCsvBtn.addEventListener('click', exportToCsv);
-            exportTextBtn.addEventListener('click', exportToText);
-            printSmallBtn.addEventListener('click', printReportForSmallPrinter); 
-            toggleModeBtn.addEventListener('click', toggleMode);
+    // Retiradas
+    txt += `\n--- RETIRADAS ---\n`;
+    if(r.withdrawalsTotal > 0){
+        r.withdrawalDetails[0].items.forEach((it, idx) => txt += `  -> ${it.expr} = ${money(it.value)}\n`);
+    } else {
+        txt += 'Nenhuma retirada.\n';
+    }
+    txt += `TOTAL RETIRADO: ${money(r.withdrawalsTotal)}\n`;
+    
+    // Total Geral
+    txt += `\n----------------\n`;
+    txt += `TOTAL GERAL CAIXA: ${money(r.cashTotal + r.paymentsTotal)}\n`;
+    
+    const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fechamento_${new Date().toISOString().slice(0,10)}.txt`; a.click();
+  });
 
-            // Chamada de inicialização
-            initializeInputs();
-            updateModeInterface();
-            updateDateTime();
-            renderHistory();
-        });
-    </script>
+  // Export CSV (Mantido)
+  document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+    const r = generateReport();
+    const lines = ['Tipo;Detalhe;Valor'];
+    r.cashDetails.forEach(d => {
+      if(Number(d.total) > 0) lines.push(`Dinheiro;"${d.name} (entrada: ${d.input})";"${d.total.toFixed(2).replace('.',',')}"`);
+    });
+    r.payDetails.forEach(p => {
+      p.items.forEach(it => {
+        const expr = (it.expr||'').replace(/"/g,'""');
+        lines.push(`Pagamento;"${p.method} - ${expr}";"${it.value.toFixed(2).replace('.',',')}"`);
+      });
+    });
+    
+    r.withdrawalDetails[0].items.forEach(it => {
+        const expr = (it.expr||'').replace(/"/g,'""');
+        lines.push(`Retirada;"${WITHDRAWAL_METHOD} - ${expr}";"${(-it.value).toFixed(2).replace('.',',')}"`);
+    });
+    
+    lines.push(`TOTAL DINHEIRO EM CAIXA;;"${r.cashTotal.toFixed(2).replace('.',',')}"`);
+    lines.push(`TOTAL PAGAMENTOS;;"${r.paymentsTotal.toFixed(2).replace('.',',')}"`);
+    lines.push(`TOTAL RETIRADO;;"${r.withdrawalsTotal.toFixed(2).replace('.',',')}"`);
+    
+    const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fechamento_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  });
+
+  // Impressão (Otimizada para economizar papel)
+  document.getElementById('printBtn').addEventListener('click', ()=>{
+    const r = generateReport();
+    
+    // Conteúdo formatado para impressão térmica compacta
+    let printContent = ''; 
+    
+    // Título e Data/Hora
+    printContent += `FECHAMENTO DE CAIXA\n`;
+    printContent += `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}\n`;
+    printContent += `----------------\n`;
+    
+    // CONTAGEM DE DINHEIRO
+    printContent += `DINHEIRO (QTD/PESO) | TOTAL\n`;
+    let foundCash = false;
+    r.cashDetails.forEach(d => {
+      if(Number(d.total) > 0) {
+          // Compactação: nome (input) = valor
+          printContent += `${d.name.padEnd(14).slice(0,14)} (${String(d.input).padStart(4)}) ${money(d.total).padStart(10)}\n`;
+          foundCash = true;
+      }
+    });
+    if(!foundCash) printContent += `Nenhuma contagem de dinheiro.\n`;
+    printContent += `TOTAL DINHEIRO: ${money(r.cashTotal)}\n`;
+    printContent += `----------------\n`;
+
+    // PAGAMENTOS (NÃO-DINHEIRO)
+    printContent += `PAGAMENTOS\n`;
+    let foundPayments = false;
+    r.payDetails.forEach(p => {
+      if(p.total > 0) {
+        // Cabeçalho do método + Total
+        printContent += `${p.method.toUpperCase().slice(0,20)}: ${money(p.total)}\n`;
+        // Detalhes da entrada (apenas a expressão e valor)
+        p.items.forEach((it, idx) => printContent += `  > ${it.expr} = ${money(it.value)}\n`);
+        foundPayments = true;
+      }
+    });
+    if(!foundPayments) printContent += `Nenhum pagamento registrado.\n`;
+    printContent += `TOTAL PAGAMENTOS: ${money(r.paymentsTotal)}\n`;
+    printContent += `----------------\n`;
+
+    // RETIRADA
+    printContent += `RETIRADA DE CAIXA\n`;
+    if(r.withdrawalsTotal > 0){
+        r.withdrawalDetails[0].items.forEach((it, idx) => printContent += `  > ${it.expr} = ${money(it.value)}\n`);
+    } else {
+        printContent += `Nenhuma retirada registrada.\n`;
+    }
+    printContent += `TOTAL RETIRADO: ${money(r.withdrawalsTotal)}\n`;
+    printContent += `----------------\n`;
+
+    // TOTAIS FINAIS
+    printContent += `TOTAL CAIXA (Dinheiro + Pagamentos):\n`;
+    printContent += `${money(r.cashTotal + r.paymentsTotal)}\n`;
+    printContent += `----------------\n`;
+
+    // Prepara o HTML da janela de impressão
+    const outHtml = '<pre style="font-family:monospace; color: black; line-height: 1.2;">' + printContent + '</pre>';
+    
+    const w = window.open('','_blank','width=400,height=600');
+    // CSS para zerar margens e garantir a impressão em preto (evitar dark mode/economia de tinta)
+    w.document.write(`
+      <html>
+      <head>
+        <title>Relatório de Caixa</title>
+        <style>
+          @media print { 
+            body { 
+              color: black !important; 
+              background-color: white !important; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+              /* Zera as margens da página */
+              margin: 0; 
+              padding: 0;
+              /* Define um tamanho de fonte menor para economia */
+              font-size: 10pt;
+            } 
+            pre { 
+              color: black !important; 
+              margin: 0; /* Zera margem do PRE */
+              padding: 0;
+            } 
+          }
+        </style>
+      </head>
+      <body>
+      ${outHtml}
+      </body>
+      </html>
+    `);
+    w.document.close(); 
+    w.print();
+  });
+
+  // AÇÕES DE INICIALIZAÇÃO
+  function init(){
+    // Força o estado a zerar no carregamento (IGNORANDO DADOS DO LOCALSTORAGE)
+    
+    // 1. Zera contadores de dinheiro
+    cashCounts = {}; 
+    
+    // 2. Zera pagamentos e retiradas
+    payments = {};
+    withdrawals = {};
+    PAYMENT_METHODS.forEach(m => { payments[m] = []; });
+    withdrawals[WITHDRAWAL_METHOD] = [];
+    
+    // 3. Mantém o modo como estava (ou define como 'quantity')
+    currentMode = localStorage.getItem('cashCounterMode') || 'quantity'; 
+    
+    // 4. Renderiza a UI com os dados zerados
+    renderDenominations();
+    buildPaymentsAndWithdrawalsUI();
+    updateAllTotals();
+  }
+
+  // salvar pagamentos e retiradas antes de sair
+  window.addEventListener('beforeunload', saveState);
+
+  // Inicia a aplicação, forçando a ser zerada.
+  init();
+
+});
+</script>
 </body>
 </html>
