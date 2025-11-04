@@ -103,7 +103,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
         <h1 style="font-size:20px;color:#4f46e5;font-weight:800; margin: 0;">Fechamento de Caixa — Contagem + Pagamentos</h1>
         <button id="clearAllBtn" class="small-btn bg-red-600 text-white" style="flex-shrink: 0;">Limpar Tudo</button> </div>
-      <p id="currentDate" class="muted mt-1">segunda-feira, --/--/---- às --:--</p>
+      <p id="currentDate" class="muted mt-1">terça-feira, --/--/---- às --:--</p>
       <p class="muted text-sm mt-2">Modo moedas: escolha <strong>Quantidade</strong> ou <strong>Pesagem</strong> (g). Em pagamentos/retiradas você pode digitar <code>2+2+3+4</code> ou valores com vírgula.</p>
     </div>
 
@@ -361,9 +361,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     updateAllTotals(); 
   }
 
-  // clear cash - ATUALIZADO (REMOVIDO CONFIRM)
+  // clear cash - (SEM CONFIRM)
   function clearCash(){
-    // if(!confirm('Limpar todas as quantidades de cédulas e moedas?')) return false; <--- REMOVIDO
     DENOMINATIONS.forEach(d=>{ const id = cssId(d.value.toFixed(2)); const inp = document.getElementById(`input-${id}`); if(inp) inp.value = (d.isCoin && currentMode==='weight') ? '0.00' : '0'; });
     updateAllTotals();
   }
@@ -436,7 +435,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     updateAllTotals();
   }
   
-  // Função que lida com o lançamento (abre o prompt e processa)
+  // Função que lida com o lançamento (abre o prompt e processa) - ***REVISADA AQUI***
   function handlePaymentAction(method, stateVar, labelText, isPayment){
     // 1. Constrói o histórico/lista de lançamentos para o prompt
     const currentEntries = stateVar[method] || [];
@@ -485,9 +484,11 @@ document.addEventListener('DOMContentLoaded',()=>{
             }
 
             if (trimmedRaw !== initialInput) {
-                if(!confirm(`Isto irá substituir o histórico anterior de ${labelText} pela nova fórmula: ${trimmedRaw}.\n\nDeseja continuar?`)){
-                    return;
-                }
+                
+                // *** CONFIRMAÇÃO REMOVIDA AQUI, CONFORME SOLICITADO. ***
+                // if(!confirm(`Isto irá substituir o histórico anterior de ${labelText} pela nova fórmula: ${trimmedRaw}.\n\nDeseja continuar?`)){
+                //     return;
+                // }
                 
                 stateVar[method] = [];
                 stateVar[method].push({ expr: trimmedRaw, value: val });
@@ -515,43 +516,33 @@ document.addEventListener('DOMContentLoaded',()=>{
       updateAllTotals();
   }
 
-  // Limpar Pagamentos - ATUALIZADO (REMOVIDO CONFIRM)
+  // Limpar Pagamentos - (SEM CONFIRM)
   function clearPayments(){
-    // if(!confirm('Apagar TODOS os pagamentos?')) return false; <--- REMOVIDO
     PAYMENT_METHODS.forEach(m => payments[m] = []); 
     saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
   }
   document.getElementById('clearPaymentsBtn').addEventListener('click', clearPayments);
   
-  // Limpar Retiradas - ATUALIZADO (REMOVIDO CONFIRM)
+  // Limpar Retiradas - (SEM CONFIRM)
   function clearWithdrawals(){
-    // if(!confirm('Apagar TODAS as retiradas de caixa?')) return false; <--- REMOVIDO
     withdrawals[WITHDRAWAL_METHOD] = [];
     saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
   }
   document.getElementById('clearWithdrawalsBtn').addEventListener('click', clearWithdrawals);
 
-  // NOVO: Limpar Tudo - ATUALIZADO (REMOVIDO CONFIRM)
+  // NOVO: Limpar Tudo - (SEM CONFIRM)
   document.getElementById('clearAllBtn').addEventListener('click', ()=>{
-      // if(!confirm('ATENÇÃO: Deseja realmente limpar TODAS as contagens, pagamentos e retiradas? Esta ação não pode ser desfeita.')) return; <--- REMOVIDO
-      
-      // Limpa Contagem (Dinheiro)
       clearCash(); 
-      // Limpa Pagamentos
       clearPayments();
-      // Limpa Retiradas
       clearWithdrawals();
       
-      // Limpa o modo de contagem 
       localStorage.removeItem('cashCounterMode');
       currentMode = 'quantity';
       updateModeLabel();
       
-      // Força o reset de estado e UI
       saveState(); 
       loadInitialState();
       
-      // Mantido apenas o alerta informativo final
       alert('Todos os dados foram limpos e o caixa está pronto para um novo fechamento.');
   });
 
@@ -692,7 +683,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fechamento_${new Date().toISOString().slice(0,10)}.csv`; a.click();
   });
 
-  // Impressão (Otimizada e Aprimorada)
+  // Impressão (Otimizada e Aprimorada para cortar o papel)
   document.getElementById('printBtn').addEventListener('click', ()=>{
     saveState(); 
     const r = generateReport();
@@ -744,49 +735,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     // TOTAIS FINAIS
     printContent += `<strong>TOTAL CAIXA (SOMA GERAL):</strong>\n`;
     printContent += `<strong>${money(r.cashTotal + r.paymentsTotal)}</strong>\n`;
-    printContent += `--------------------------------\n`;
+    printContent += `--------------------------------`; // SEM QUEBRA DE LINHA FINAL
+
+    // 1. Remove qualquer quebra de linha extra no final do conteúdo
+    printContent = printContent.trim(); 
     
-    // Prepara o HTML da janela de impressão
+    // 2. Prepara o HTML da janela de impressão, garantindo line-height=1.0 e margin=0
     const outHtml = '<pre style="font-family:monospace; color: black; line-height: 1.0; font-weight: bold; margin: 0; padding: 0;">' + printContent + '</pre>';
     
     const w = window.open('','_blank','width=400,height=600');
-    // CSS para zerar margens e garantir a impressão em preto (evitar dark mode/economia de tinta)
-    w.document.write(`
-      <html>
-      <head>
-        <title>Relatório de Caixa</title>
-        <style>
-          @media print { 
-            body { 
-              color: black !important; 
-              background-color: white !important; 
-              -webkit-print-color-adjust: exact; 
-              print-color-adjust: exact; 
-              /* Zera as margens da página */
-              margin: 0; 
-              padding: 0;
-              /* Define um tamanho de fonte menor para economia */
-              font-size: 10pt;
-            } 
-            pre { 
-              color: black !important; 
-              margin: 0; /* Zera margem do PRE */
-              padding: 0;
-              line-height: 1.1; /* Reduz o espaçamento entre linhas (econimiza papel) */
-              white-space: pre-wrap; /* Permite quebras de linha longas */
-              /* Garante que o negrito funcione na impressão */
-              font-weight: bold !important; 
-            } 
-            /* Garante que o elemento strong e b sejam impressos em negrito */
-            strong, b { font-weight: bolder !important; }
-          }
-        </style>
-      </head>
-      <body>
-      ${outHtml}
-      </body>
-      </html>
-    `);
+    
+    // 3. Compacta o HTML final da janela de impressão, removendo novos espaços/quebras de linha desnecessários no template literal
+    const printWindowHtml = `<html><head><title>Relatório de Caixa</title><style>@media print { body { color: black !important; background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; font-size: 10pt;} pre { color: black !important; margin: 0; padding: 0; line-height: 1.0; white-space: pre-wrap; font-weight: bold !important; } strong, b { font-weight: bolder !important; }}</style></head><body>${outHtml}</body></html>`;
+
+    w.document.write(printWindowHtml);
     w.document.close(); 
     w.print();
   });
