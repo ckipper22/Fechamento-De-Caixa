@@ -100,7 +100,9 @@
   <div style="max-width:1200px;margin:0 auto;">
 
     <div class="card mb-6">
-      <h1 style="font-size:20px;color:#4f46e5;font-weight:800">Fechamento de Caixa — Contagem + Pagamentos</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h1 style="font-size:20px;color:#4f46e5;font-weight:800; margin: 0;">Fechamento de Caixa — Contagem + Pagamentos</h1>
+        <button id="clearAllBtn" class="small-btn bg-red-600 text-white" style="flex-shrink: 0;">Limpar Tudo</button> </div>
       <p id="currentDate" class="muted mt-1">segunda-feira, --/--/---- às --:--</p>
       <p class="muted text-sm mt-2">Modo moedas: escolha <strong>Quantidade</strong> ou <strong>Pesagem</strong> (g). Em pagamentos/retiradas você pode digitar <code>2+2+3+4</code> ou valores com vírgula.</p>
     </div>
@@ -180,10 +182,10 @@
         </div>
 
         <div style="width:380px">
-          <div class="mt-4 grid grid-cols-2 gap-2">
+          <div class="mt-4 grid grid-cols-3 gap-2">
             <button id="exportCsvBtn" class="small-btn" style="background:#efefef;">Exportar CSV</button>
             <button id="exportTxtBtn" class="small-btn" style="background:#efefef;">Exportar TXT</button>
-            <button id="printBtn" class="small-btn bg-green-600 text-white col-span-2">Salvar e Imprimir</button>
+            <button id="printBtn" class="small-btn bg-green-600 text-white col-span-3">Salvar e Imprimir</button>
           </div>
         </div>
       </div>
@@ -210,7 +212,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     {value:0.05,   label:'R$ 0,05',   isCoin:true,  weight:3.2},
   ];
 
-  // MÉTODOS DE PAGAMENTO ATUALIZADOS (Inclusão de Aga Único e Aga Parcelado)
+  // MÉTODOS DE PAGAMENTO ATUALIZADOS
   const PAYMENT_METHODS = [
     'Good Card',
     'Depósito em Conta', 
@@ -228,8 +230,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     'Elo Débito', 
     'Elo Crédito', 
     'Elo Parcelado',
-    'Aga Único', // NOVO
-    'Aga Parcelado', // NOVO
+    'Aga Único', 
+    'Aga Parcelado', 
     'Crediário', 
     'Convênio',
     'Reembolsos'
@@ -270,14 +272,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     PAYMENT_METHODS.forEach(m => { 
         const sum = (payments[m] || []).reduce((s,x)=>s + Number(x.value||0),0);
         totalPayments += sum; 
-        // Atualiza a linha compacta do método de pagamento
         const totalEl = document.getElementById(`pay-total-${cssId(m)}`);
         if(totalEl) totalEl.textContent = money(sum);
     });
     
-    // Calcula o total de retiradas
     let totalWithdrawals = (withdrawals[WITHDRAWAL_METHOD] || []).reduce((s,x)=>s + Number(x.value||0),0);
-    // Atualiza a linha compacta de retirada
     const withdrawalTotalEl = document.getElementById(`pay-total-${cssId(WITHDRAWAL_METHOD)}`);
     if(withdrawalTotalEl) withdrawalTotalEl.textContent = money(totalWithdrawals);
 
@@ -362,12 +361,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     updateAllTotals(); 
   }
 
-  // clear cash
-  document.getElementById('clearCashBtn').addEventListener('click', ()=>{
-    if(!confirm('Limpar todas as quantidades de cédulas e moedas?')) return;
+  // clear cash - ATUALIZADO (REMOVIDO CONFIRM)
+  function clearCash(){
+    // if(!confirm('Limpar todas as quantidades de cédulas e moedas?')) return false; <--- REMOVIDO
     DENOMINATIONS.forEach(d=>{ const id = cssId(d.value.toFixed(2)); const inp = document.getElementById(`input-${id}`); if(inp) inp.value = (d.isCoin && currentMode==='weight') ? '0.00' : '0'; });
     updateAllTotals();
-  });
+  }
+  document.getElementById('clearCashBtn').addEventListener('click', clearCash);
 
   // toggle modo QTD/PESAGEM
   function updateModeLabel(){ document.getElementById('modeLabel').textContent = (currentMode==='quantity') ? 'Modo: QUANTIDADE' : 'Modo: PESAGEM'; }
@@ -442,17 +442,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     const currentEntries = stateVar[method] || [];
     let initialInput = '';
     if (currentEntries.length > 0) {
-        // Se houver histórico, mostra todos os lançamentos para edição/revisão
         initialInput = currentEntries.map(e => e.expr).join(' + ');
         
-        // Se a expressão for muito longa, mostra apenas os 3 últimos lançamentos
         if(initialInput.length > 150) {
             initialInput = currentEntries.slice(-3).map(e => e.expr).join(' + ');
             alert(`Para ${labelText}, há muitos lançamentos. O campo de edição abaixo contém apenas os 3 últimos. Para zerar, use o botão "Limpar Pagamentos".`);
         }
     }
 
-    // 2. Abre o prompt para edição (o "espaço para digitar" vira o prompt)
+    // 2. Abre o prompt para edição 
     const actionLabel = isPayment ? 'lançamentos' : 'valores retirados';
     const promptMessage = `Lance ou edite os ${actionLabel} para ${labelText}:\n\nDigite a fórmula completa (ex: 20+10+5,50). Digite 0 para remover todos os lançamentos.\n\nVALOR(ES) ATUAL(IS):`;
     
@@ -471,10 +469,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             stateVar[method] = [];
         }
     } else if (trimmedRaw === '') {
-        // Se o usuário limpou o campo, mas não digitou 0, não faz nada
         return;
     } else {
-        // Tenta avaliar a nova expressão completa
         try { 
             let val = evaluateExpression(trimmedRaw);
             
@@ -488,26 +484,12 @@ document.addEventListener('DOMContentLoaded',()=>{
                  return;
             }
 
-            // A nova entrada é tratada como a soma de TODOS os lançamentos, substituindo a lista anterior
-            // A nova lista terá APENAS um item, com o total da expressão.
-            // Para manter a granularidade do histórico, vamos tratar cada sinal de '+' como um lançamento
-            
-            // Esta lógica é complexa. Vamos simplificar para: 
-            // O usuário edita a lista inteira, ou adiciona um novo valor.
-            
-            // Se o usuário digitou uma expressão complexa (ex: "10+20+5"), 
-            // vamos considerar essa expressão como o novo único lançamento.
-            // Isso evita a complicação de editar itens individuais, focando na simplificação da UI.
-
             if (trimmedRaw !== initialInput) {
-                // Se a nova entrada for diferente da anterior, assumimos que é uma substituição
                 if(!confirm(`Isto irá substituir o histórico anterior de ${labelText} pela nova fórmula: ${trimmedRaw}.\n\nDeseja continuar?`)){
                     return;
                 }
                 
-                // Remove todos os lançamentos antigos
                 stateVar[method] = [];
-                // Adiciona o novo lançamento (que representa o total da expressão digitada)
                 stateVar[method].push({ expr: trimmedRaw, value: val });
             }
         
@@ -518,7 +500,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
     
     saveState(); 
-    updateAllTotals(); // Força a atualização da tela
+    updateAllTotals(); 
   }
 
 
@@ -533,37 +515,61 @@ document.addEventListener('DOMContentLoaded',()=>{
       updateAllTotals();
   }
 
-  // Limpar Pagamentos
-  document.getElementById('clearPaymentsBtn').addEventListener('click', ()=>{
-    if(!confirm('Apagar TODOS os pagamentos?')) return;
+  // Limpar Pagamentos - ATUALIZADO (REMOVIDO CONFIRM)
+  function clearPayments(){
+    // if(!confirm('Apagar TODOS os pagamentos?')) return false; <--- REMOVIDO
     PAYMENT_METHODS.forEach(m => payments[m] = []); 
     saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
-  });
+  }
+  document.getElementById('clearPaymentsBtn').addEventListener('click', clearPayments);
   
-  // Limpar Retiradas
-  document.getElementById('clearWithdrawalsBtn').addEventListener('click', ()=>{
-    if(!confirm('Apagar TODAS as retiradas de caixa?')) return;
+  // Limpar Retiradas - ATUALIZADO (REMOVIDO CONFIRM)
+  function clearWithdrawals(){
+    // if(!confirm('Apagar TODAS as retiradas de caixa?')) return false; <--- REMOVIDO
     withdrawals[WITHDRAWAL_METHOD] = [];
     saveState(); buildPaymentsAndWithdrawalsUI(); updateAllTotals();
+  }
+  document.getElementById('clearWithdrawalsBtn').addEventListener('click', clearWithdrawals);
+
+  // NOVO: Limpar Tudo - ATUALIZADO (REMOVIDO CONFIRM)
+  document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+      // if(!confirm('ATENÇÃO: Deseja realmente limpar TODAS as contagens, pagamentos e retiradas? Esta ação não pode ser desfeita.')) return; <--- REMOVIDO
+      
+      // Limpa Contagem (Dinheiro)
+      clearCash(); 
+      // Limpa Pagamentos
+      clearPayments();
+      // Limpa Retiradas
+      clearWithdrawals();
+      
+      // Limpa o modo de contagem 
+      localStorage.removeItem('cashCounterMode');
+      currentMode = 'quantity';
+      updateModeLabel();
+      
+      // Força o reset de estado e UI
+      saveState(); 
+      loadInitialState();
+      
+      // Mantido apenas o alerta informativo final
+      alert('Todos os dados foram limpos e o caixa está pronto para um novo fechamento.');
   });
 
   // Salva todos os estados
   function saveState(){ 
-      localStorage.setItem('payments_v5', JSON.stringify(payments)); // Nova versão do storage
+      localStorage.setItem('payments_v5', JSON.stringify(payments)); 
       localStorage.setItem('cashCounts', JSON.stringify(cashCounts)); 
-      localStorage.setItem('withdrawals_v2', JSON.stringify(withdrawals)); // Nova versão do storage
+      localStorage.setItem('withdrawals_v2', JSON.stringify(withdrawals)); 
   }
   
-  // Função para carregar o estado inicial (garante que NÃO ZERE os valores)
+  // Função para carregar o estado inicial 
   function loadInitialState(){
-      // Tenta carregar dados do localStorage
       try {
           const storedCash = localStorage.getItem('cashCounts');
           if (storedCash) cashCounts = JSON.parse(storedCash);
       } catch (e) { console.error('Erro ao carregar cashCounts:', e); }
 
       try {
-          // Tenta carregar a nova versão, ou a anterior se a nova não existir
           const storedPayments = localStorage.getItem('payments_v5') || localStorage.getItem('payments_v4'); 
           if (storedPayments) payments = JSON.parse(storedPayments);
       } catch (e) { console.error('Erro ao carregar payments_v5/v4:', e); }
@@ -573,11 +579,9 @@ document.addEventListener('DOMContentLoaded',()=>{
           if (storedWithdrawals) withdrawals = JSON.parse(storedWithdrawals);
       } catch (e) { console.error('Erro ao carregar withdrawals_v2/v1:', e); }
 
-      // Garante que todos os métodos de pagamento/retirada listados existam no objeto de estado
       PAYMENT_METHODS.forEach(m => { if (!Array.isArray(payments[m])) payments[m] = []; });
       if (!Array.isArray(withdrawals[WITHDRAWAL_METHOD])) withdrawals[WITHDRAWAL_METHOD] = [];
 
-      // Renderiza a UI com os dados carregados
       renderDenominations();
       buildPaymentsAndWithdrawalsUI();
       updateAllTotals();
@@ -590,7 +594,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     const cashDetails = [];
     DENOMINATIONS.forEach(d => {
       const id = cssId(d.value.toFixed(2));
-      // Pega o valor atual da tela (importante para impressão sem zerar)
       const raw = document.getElementById(`input-${id}`)?.value || 0;
       const val = parseFloat(raw) || 0;
       let total = 0;
@@ -633,14 +636,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     const r = generateReport();
     let txt = `FECHAMENTO DE CAIXA\n${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}\n`;
     
-    // Contagem de Dinheiro
     txt += `\n--- DINHEIRO ---\n`;
     r.cashDetails.forEach(d => {
       if(Number(d.total) > 0) txt += `${d.name} (${d.input}) = ${money(d.total)}\n`;
     });
     txt += `\nTOTAL DINHEIRO: ${money(r.cashTotal)}\n`;
     
-    // Pagamentos
     txt += `\n--- PAGAMENTOS ---\n`;
     r.payDetails.forEach(p => {
       if(p.total === 0) return;
@@ -649,7 +650,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
     txt += `\nTOTAL PAGAMENTOS: ${money(r.paymentsTotal)}\n`;
 
-    // Retiradas
     txt += `\n--- RETIRADAS ---\n`;
     if(r.withdrawalsTotal > 0){
         r.withdrawalDetails[0].items.forEach((it, idx) => txt += `  -> ${it.expr} = ${money(it.value)}\n`);
@@ -658,7 +658,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
     txt += `TOTAL RETIRADO: ${money(r.withdrawalsTotal)}\n`;
     
-    // Total Geral
     txt += `\n----------------\n`;
     txt += `TOTAL CAIXA (Dinheiro + Pagamentos): ${money(r.cashTotal + r.paymentsTotal)}\n`;
     
@@ -695,10 +694,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // Impressão (Otimizada e Aprimorada)
   document.getElementById('printBtn').addEventListener('click', ()=>{
-    saveState(); // Salva o estado antes de imprimir
+    saveState(); 
     const r = generateReport();
     
-    // Conteúdo formatado para impressão térmica compacta e em negrito forte
     let printContent = ''; 
     
     // Título e Data/Hora
@@ -711,7 +709,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     let foundCash = false;
     r.cashDetails.forEach(d => {
       if(Number(d.total) > 0) {
-          // Compactação: nome (input) = valor (em negrito)
           printContent += `${d.name.padEnd(14).slice(0,14)} (${String(d.input).padStart(4)}) = <strong>${money(d.total)}</strong>\n`;
           foundCash = true;
       }
@@ -725,9 +722,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     let foundPayments = false;
     r.payDetails.forEach(p => {
       if(p.total > 0) {
-        // Cabeçalho do método + Total (em negrito)
         printContent += `${p.method.toUpperCase().slice(0,20)}: <strong>${money(p.total)}</strong>\n`;
-        // Detalhes da entrada (apenas a expressão e valor em negrito)
         p.items.forEach((it, idx) => printContent += `  > ${it.expr} = <strong>${money(it.value)}</strong>\n`);
         foundPayments = true;
       }
@@ -750,9 +745,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     printContent += `<strong>TOTAL CAIXA (SOMA GERAL):</strong>\n`;
     printContent += `<strong>${money(r.cashTotal + r.paymentsTotal)}</strong>\n`;
     printContent += `--------------------------------\n`;
-
-    // Adiciona algumas linhas vazias no final (para dar um pequeno avanço no papel)
-    printContent += '\n\n.'; 
     
     // Prepara o HTML da janela de impressão
     const outHtml = '<pre style="font-family:monospace; color: black; line-height: 1.0; font-weight: bold; margin: 0; padding: 0;">' + printContent + '</pre>';
