@@ -73,6 +73,7 @@
   .title-green { color: #065f46; } 
   .title-blue { color: #4338ca; } 
   .title-red { color: #991b1b; } 
+  .text-xs { font-size: 0.75rem; } /* Adicionado para garantir o tamanho da fonte */
 
   @media (max-width:1100px){
       .grid-container{
@@ -172,12 +173,14 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
         <div style="flex:1;">
           <div class="muted">Total Caixa (cédulas + moedas):</div>
+          <div class="muted text-xs" style="color: #4f46e5; margin-bottom: 4px;">Este é o valor do dinheiro físico (cédulas e moedas) que deve estar no caixa.</div> 
           <div id="cashTotalDisplay" class="value-large">R$ 0,00</div>
 
           <div class="muted mt-2">Total Pagamentos (Cartões/Crediário/PIX):</div>
           <div id="paymentsTotalFooter" class="value-large">R$ 0,00</div>
           
           <div class="muted mt-2">Dinheiro Retirado:</div>
+          <div class="muted text-xs" style="color: #dc2626; margin-bottom: 4px;">Este é o valor total das sangrias (retiradas) de dinheiro realizadas durante o período.</div>
           <div id="withdrawalsTotalFooter" class="value-large" style="color:#dc2626">R$ 0,00</div>
         </div>
 
@@ -435,7 +438,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     updateAllTotals();
   }
   
-  // Função que lida com o lançamento (abre o prompt e processa) - ***REVISADA AQUI***
+  // Função que lida com o lançamento (abre o prompt e processa)
   function handlePaymentAction(method, stateVar, labelText, isPayment){
     // 1. Constrói o histórico/lista de lançamentos para o prompt
     const currentEntries = stateVar[method] || [];
@@ -484,11 +487,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             }
 
             if (trimmedRaw !== initialInput) {
-                
-                // *** CONFIRMAÇÃO REMOVIDA AQUI, CONFORME SOLICITADO. ***
-                // if(!confirm(`Isto irá substituir o histórico anterior de ${labelText} pela nova fórmula: ${trimmedRaw}.\n\nDeseja continuar?`)){
-                //     return;
-                // }
+                // CONFIRMAÇÃO REMOVIDA AQUI (ENTER confirma)
                 
                 stateVar[method] = [];
                 stateVar[method].push({ expr: trimmedRaw, value: val });
@@ -732,9 +731,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     printContent += `TOTAL RETIRADO: <strong>${money(r.withdrawalsTotal)}</strong>\n`;
     printContent += `--------------------------------\n`;
 
-    // TOTAIS FINAIS
-    printContent += `<strong>TOTAL CAIXA (SOMA GERAL):</strong>\n`;
-    printContent += `<strong>${money(r.cashTotal + r.paymentsTotal)}</strong>\n`;
+    // TOTAIS FINAIS (Imprime apenas o total de dinheiro em caixa)
+    printContent += `<strong>TOTAL DINHEIRO EM CAIXA:</strong>\n`;
+    printContent += `<strong>${money(r.cashTotal)}</strong>\n`; 
     printContent += `--------------------------------`; // SEM QUEBRA DE LINHA FINAL
 
     // 1. Remove qualquer quebra de linha extra no final do conteúdo
