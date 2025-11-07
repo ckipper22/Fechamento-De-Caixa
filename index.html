@@ -199,7 +199,7 @@
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
 
-  // ===== Configurações de denominações =====
+  // ===== Configurações de denominações (INALTERADO) =====
   const DENOMINATIONS = [
     {value:200.00, label:'R$ 200,00', isCoin:false, weight:0.9},
     {value:100.00, label:'R$ 100,00', isCoin:false, weight:0.9},
@@ -215,28 +215,31 @@ document.addEventListener('DOMContentLoaded',()=>{
     {value:0.05,   label:'R$ 0,05',   isCoin:true,  weight:3.2},
   ];
 
-  // MÉTODOS DE PAGAMENTO ATUALIZADOS
+  // MÉTODOS DE PAGAMENTO ATUALIZADOS NA ORDEM SOLICITADA
   const PAYMENT_METHODS = [
-    'Good Card',
+    'Aga Convênio', 
+    'Aga Crediário', 
+    'Banrisul A Prazo', 
+    // Assumi 'Banri a Vista' como 'Banrisul Débito'
+    'Banrisul Débito', 
+    'Banrisul Parcelado',
     'Depósito em Conta', 
+    'Elo Crédito', 
+    'Elo Débito', 
+    'Elo Parcelado',
+    'Good Card',
+    // Assumi 'masre credito' como 'Master Crédito'
+    'Master Crédito', 
+    'Master Débito', 
+    'Master Parcelado',
     'Pix Off-line', 
     'Pix Seguro',
-    'Visa Débito', 
     'Visa Crédito', 
+    'Visa Débito', 
     'Visa Parcelado',
-    'Master Débito', 
-    'Master Crédito', 
-    'Master Parcelado',
-    'Banrisul Débito', 
-    'Banrisul A Prazo', 
-    'Banrisul Parcelado',
-    'Elo Débito', 
-    'Elo Crédito', 
-    'Elo Parcelado',
-    'Aga Único', 
-    'Aga Parcelado', 
-    'Crediário', 
+    // Assumi que os 'Convênio' e 'Crediário' no final são genéricos ou adicionais
     'Convênio',
+    'Crediário', 
     'Reembolsos'
   ];
   
@@ -403,17 +406,21 @@ document.addEventListener('DOMContentLoaded',()=>{
     let titleClass = '';
     const lowerCaseMethod = method.toLowerCase();
     
+    // ATUALIZAÇÃO DA LÓGICA DE CORES PARA REFLETIR AS NOVAS CATEGORIAS
     if(isPayment){
-        if(lowerCaseMethod.includes('débito') || lowerCaseMethod.includes('pix seguro') || lowerCaseMethod.includes('depósito') || lowerCaseMethod.includes('aga único')){ 
-            titleClass = 'title-green'; 
-        } else if(lowerCaseMethod.includes('crédito') || lowerCaseMethod.includes('parcelado') || lowerCaseMethod.includes('a prazo') || lowerCaseMethod.includes('crediário') || lowerCaseMethod.includes('aga parcelado')){
-            titleClass = 'title-blue'; 
-        } else if(lowerCaseMethod.includes('reembolsos')){
-             titleClass = 'title-red'; 
+        if(lowerCaseMethod.includes('débito') || lowerCaseMethod.includes('vista') || lowerCaseMethod.includes('pix seguro') || lowerCaseMethod.includes('depósito')){ 
+            titleClass = 'title-green'; // Débito/Vista/Pix Rápido/Depósito (Dinheiro em conta rápido)
+        } else if(lowerCaseMethod.includes('crédito') || lowerCaseMethod.includes('parcelado') || lowerCaseMethod.includes('a prazo') || lowerCaseMethod.includes('crediário')){
+            titleClass = 'title-blue'; // Crédito/Parcelado/Prazo/Crediário (Dinheiro em conta com delay)
+        } else if(lowerCaseMethod.includes('reembolsos') || lowerCaseMethod.includes('retirada') || lowerCaseMethod.includes('pix off-line')){
+             titleClass = 'title-red'; // Reembolsos/Retirada/Pix Off-line (Saídas de caixa ou valores mais complicados)
+        } else if(lowerCaseMethod.includes('convênio') || lowerCaseMethod.includes('good card')){
+             titleClass = 'title-green'; // Convênio/Good Card (Assumindo que são rápidos)
         }
     } else {
-        titleClass = 'title-red'; 
+        titleClass = 'title-red'; // Retiradas são sempre vermelhas
     }
+
 
     const row = document.createElement('div');
     row.className = 'payment-row';
@@ -699,6 +706,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     let foundCash = false;
     r.cashDetails.forEach(d => {
       if(Number(d.total) > 0) {
+          // Otimizado para não parecer que 'acabou a tinta' (negrito na coluna de valor)
           printContent += `${d.name.padEnd(14).slice(0,14)} (${String(d.input).padStart(4)}) = <strong>${money(d.total)}</strong>\n`;
           foundCash = true;
       }
@@ -740,6 +748,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     printContent = printContent.trim(); 
     
     // 2. Prepara o HTML da janela de impressão, garantindo line-height=1.0 e margin=0
+    // Foi mantido o CSS otimizado para a impressora térmica não-fiscal (preto, fundo branco, negrito)
     const outHtml = '<pre style="font-family:monospace; color: black; line-height: 1.0; font-weight: bold; margin: 0; padding: 0;">' + printContent + '</pre>';
     
     const w = window.open('','_blank','width=400,height=600');
@@ -750,6 +759,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     w.document.write(printWindowHtml);
     w.document.close(); 
     w.print();
+    
+    // Novo: Mensagem de confirmação após a impressão, para a instrução de 'Limpar Tudo'
+    if(confirm('A impressão foi enviada. Deseja limpar os dados do caixa para o próximo fechamento?')){
+      document.getElementById('clearAllBtn').click();
+    }
   });
 
   // AÇÕES DE INICIALIZAÇÃO
